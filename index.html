@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Sparsepp by greg7mdp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Sparsepp</h1>
+      <h2 class="project-tagline">A fast, memory efficient hash map for C++</h2>
+      <a href="https://github.com/greg7mdp/sparsepp" class="btn">View on GitHub</a>
+      <a href="https://github.com/greg7mdp/sparsepp/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/greg7mdp/sparsepp/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="sparsepp-a-fast-memory-efficient-hash-map-for-c" class="anchor" href="#sparsepp-a-fast-memory-efficient-hash-map-for-c" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sparsepp: A fast, memory efficient hash map for C++</h1>
+
+<p>Sparsepp is derived from Google's excellent <a href="https://github.com/sparsehash/sparsehash">sparsehash</a> implementation. It aims to achieve the following objectives:</p>
+
+<ul>
+<li>A drop-in alternative for unordered_map and unordered_set.</li>
+<li>
+<strong>Extremely low memory usage</strong> (typically about one byte overhead per entry).</li>
+<li>
+<strong>Very efficient</strong>, typically faster than your compiler's unordered map/set or Boost's.</li>
+<li>
+<strong>C++11 support</strong> (if supported by compiler).</li>
+<li>
+<strong>Single header</strong> implementation - just copy <code>sparsepp.h</code> to your project and include it.</li>
+<li>
+<strong>Tested</strong> on Windows (vs2010-2015, g++), linux (g++, clang++) and MacOS (clang++).</li>
+</ul>
+
+<p>We believe Sparsepp provides an unparalleled combination of performance and memory usage, and will outperform your compiler's unordered_map on both counts. Only Google's <code>dense_hash_map</code> is consistently faster, at the cost of much greater memory usage (especially when the final size of the map is not known in advance). </p>
+
+<p>For a detailed comparison of various hash implementations, including Sparsepp, please see our <a href="bench.md">write-up</a>.</p>
+
+<h2>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h2>
+
+<div class="highlight highlight-source-c++"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>iostream<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>sparsepp.h<span class="pl-pds">&gt;</span></span>
+
+<span class="pl-k">using</span> spp::sparse_hash_map;
+
+<span class="pl-k">int</span> <span class="pl-en">main</span>()
+{
+    <span class="pl-c">// Create an unordered_map of three strings (that map to strings)</span>
+    sparse_hash_map&lt;std::string, std::string&gt; email = 
+    {
+        { <span class="pl-s"><span class="pl-pds">"</span>tom<span class="pl-pds">"</span></span>,  <span class="pl-s"><span class="pl-pds">"</span>tom@gmail.com<span class="pl-pds">"</span></span>},
+        { <span class="pl-s"><span class="pl-pds">"</span>jeff<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>jk@gmail.com<span class="pl-pds">"</span></span>},
+        { <span class="pl-s"><span class="pl-pds">"</span>jim<span class="pl-pds">"</span></span>,  <span class="pl-s"><span class="pl-pds">"</span>jimg@microsoft.com<span class="pl-pds">"</span></span>}
+    };
+
+    <span class="pl-c">// Iterate and print keys and values </span>
+    <span class="pl-k">for</span> (<span class="pl-k">const</span> <span class="pl-k">auto</span>&amp; n : email) 
+        std::cout &lt;&lt; n.<span class="pl-smi">first</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>'s email is: <span class="pl-pds">"</span></span> &lt;&lt; n.<span class="pl-smi">second</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+
+    <span class="pl-c">// Add a new entry</span>
+    email[<span class="pl-s"><span class="pl-pds">"</span>bill<span class="pl-pds">"</span></span>] = <span class="pl-s"><span class="pl-pds">"</span>bg@whatever.com<span class="pl-pds">"</span></span>;
+
+    <span class="pl-c">// and print it</span>
+    std::cout &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>bill's email is: <span class="pl-pds">"</span></span> &lt;&lt; email[<span class="pl-s"><span class="pl-pds">"</span>bill<span class="pl-pds">"</span></span>] &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+
+    <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+}</pre></div>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>Since the full Sparsepp implementation is contained in a single header file <code>sparsepp.h</code>, the installation consist in copying this header file wherever it will be convenient to include in your project(s). </p>
+
+<p>Optionally, a second header file <code>spp_utils.h</code> is provided, which implements only the spp::hash_combine() functionality. This is useful when we want to specify a hash function for a user-defined class in an header file, without including the full <code>sparsepp.h</code> header (this is demonstrated in <a href="#example-2---providing-a-hash-function-for-a-user-defined-class">example 2</a> below).</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>As shown in the example above, you need to include the header file: <code>#include &lt;sparsepp.h&gt;</code></p>
+
+<p>This provides the implementation for the following classes:</p>
+
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">namespace</span> <span class="pl-en">spp</span>
+{
+    <span class="pl-k">template </span>&lt;<span class="pl-k">class</span> <span class="pl-en">Key</span>, 
+              <span class="pl-k">class</span> <span class="pl-en">T</span>,
+              <span class="pl-k">class</span> <span class="pl-en">HashFcn</span>  = spp_hash&lt;Key&gt;,  
+              <span class="pl-k">class</span> <span class="pl-en">EqualKey</span> = std::equal_to&lt;Key&gt;,
+              <span class="pl-k">class</span> <span class="pl-en">Alloc</span>    = libc_allocator_with_realloc&lt;std::pair&lt;<span class="pl-k">const</span> Key, T&gt;&gt;&gt;
+    <span class="pl-k">class</span> <span class="pl-en">sparse_hash_map</span>;
+
+    <span class="pl-k">template </span>&lt;<span class="pl-k">class</span> <span class="pl-en">Value</span>,
+              <span class="pl-k">class</span> <span class="pl-en">HashFcn</span>  = spp_hash&lt;Value&gt;,
+              <span class="pl-k">class</span> <span class="pl-en">EqualKey</span> = std::equal_to&lt;Value&gt;,
+              <span class="pl-k">class</span> <span class="pl-en">Alloc</span>    = libc_allocator_with_realloc&lt;Value&gt;&gt;
+    <span class="pl-k">class</span> <span class="pl-en">sparse_hash_set</span>;
+};</pre></div>
+
+<p>These classes provide the same interface as std::unordered_map and std::unordered_set, with the following differences:</p>
+
+<ul>
+<li>Calls to erase() may invalidate iterators. However, conformant to the C++11 standard, the position and range erase functions return an iterator pointing to the position immediately following the last of the elements erased. This makes it easy to traverse a sparse hash table and delete elements matching a condition. For example to delete odd values:</li>
+</ul>
+
+<div class="highlight highlight-source-c++"><pre>        <span class="pl-k">for</span> (<span class="pl-k">auto</span> it = c.begin(); it != c.end(); )
+        <span class="pl-k">if</span> (it-&gt;first % <span class="pl-c1">2</span> == <span class="pl-c1">1</span>)
+            it = c.erase(it);
+        <span class="pl-k">else</span>
+            ++it;</pre></div>
+
+<ul>
+<li>Since items are not grouped into buckets, Bucket APIs have been adapted: <code>max_bucket_count</code> is equivalent to <code>max_size</code>, and <code>bucket_count</code> returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.</li>
+</ul>
+
+<h2>
+<a id="example-2---providing-a-hash-function-for-a-user-defined-class" class="anchor" href="#example-2---providing-a-hash-function-for-a-user-defined-class" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example 2 - providing a hash function for a user-defined class</h2>
+
+<p>In order to use a sparse_hash_set or sparse_hash_map, a hash function should be provided. Even though a the hash function can be provided via the HashFcn template parameter, we recommend injecting a specialization of <code>std::hash</code> for the class into the "std" namespace. For example:</p>
+
+<div class="highlight highlight-source-c++"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>iostream<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>functional<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>sparsepp.h<span class="pl-pds">"</span></span>
+
+<span class="pl-k">using</span> std::string;
+
+<span class="pl-k">struct</span> <span class="pl-en">Person</span> 
+{
+    <span class="pl-k">bool</span> <span class="pl-k">operator</span>==(<span class="pl-k">const</span> Person &amp;o) <span class="pl-k">const</span> 
+    { <span class="pl-k">return</span> _first == o.<span class="pl-smi">_first</span> &amp;&amp; _last == o.<span class="pl-smi">_last</span>; }
+
+    string _first;
+    string _last;
+};
+
+<span class="pl-k">namespace</span> <span class="pl-en">std</span>
+{
+    <span class="pl-c">// inject specialization of std::hash for Person into namespace std</span>
+    <span class="pl-c">// ----------------------------------------------------------------</span>
+    <span class="pl-k">template</span>&lt;&gt; 
+    <span class="pl-k">struct</span> <span class="pl-en">hash</span>&lt;Person&gt;
+    {
+        std::<span class="pl-c1">size_t</span> <span class="pl-en">operator</span>()(Person <span class="pl-k">const</span> &amp;p) <span class="pl-k">const</span>
+        {
+            std::<span class="pl-c1">size_t</span> seed = <span class="pl-c1">0</span>;
+            <span class="pl-c1">spp::hash_combine</span>(seed, p.<span class="pl-smi">_first</span>);
+            <span class="pl-c1">spp::hash_combine</span>(seed, p.<span class="pl-smi">_last</span>);
+            <span class="pl-k">return</span> seed;
+        }
+    };
+}
+
+<span class="pl-k">int</span> <span class="pl-en">main</span>()
+{
+    <span class="pl-c">// As we have defined a specialization of std::hash() for Person, </span>
+    <span class="pl-c">// we can now create sparse_hash_set or sparse_hash_map of Persons</span>
+    <span class="pl-c">// ----------------------------------------------------------------</span>
+    spp::sparse_hash_set&lt;Person&gt; persons = { { <span class="pl-s"><span class="pl-pds">"</span>John<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Galt<span class="pl-pds">"</span></span> }, 
+                                             { <span class="pl-s"><span class="pl-pds">"</span>Jane<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Doe<span class="pl-pds">"</span></span> } };
+    <span class="pl-k">for</span> (<span class="pl-k">auto</span>&amp; p: persons)
+        std::cout &lt;&lt; p.<span class="pl-smi">_first</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">'</span> <span class="pl-pds">'</span></span> &lt;&lt; p.<span class="pl-smi">_last</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">'</span><span class="pl-cce">\n</span><span class="pl-pds">'</span></span>;
+}</pre></div>
+
+<p>The <code>std::hash</code> specialization for <code>Person</code> combines the hash values for both first and last name using the convenient spp::hash_combine function, and returns the combined hash value. </p>
+
+<p>spp::hash_combine is provided by the header <code>sparsepp.h</code>. However, class definitions often appear in header files, and it is desirable to limit the size of headers included in such header files, so we provide the very small header <code>spp_utils.h</code> for that purpose:</p>
+
+<div class="highlight highlight-source-c++"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>spp_utils.h<span class="pl-pds">"</span></span>
+
+<span class="pl-k">using</span> std::string;
+
+<span class="pl-k">struct</span> <span class="pl-en">Person</span> 
+{
+    <span class="pl-k">bool</span> <span class="pl-k">operator</span>==(<span class="pl-k">const</span> Person &amp;o) <span class="pl-k">const</span> 
+    { 
+        <span class="pl-k">return</span> _first == o.<span class="pl-smi">_first</span> &amp;&amp; _last == o.<span class="pl-smi">_last</span> &amp;&amp; _age == o.<span class="pl-smi">_age</span>; 
+    }
+
+    string _first;
+    string _last;
+    <span class="pl-k">int</span>    _age;
+};
+
+<span class="pl-k">namespace</span> <span class="pl-en">std</span>
+{
+    <span class="pl-c">// inject specialization of std::hash for Person into namespace std</span>
+    <span class="pl-c">// ----------------------------------------------------------------</span>
+    <span class="pl-k">template</span>&lt;&gt; 
+    <span class="pl-k">struct</span> <span class="pl-en">hash</span>&lt;Person&gt;
+    {
+        std::<span class="pl-c1">size_t</span> <span class="pl-en">operator</span>()(Person <span class="pl-k">const</span> &amp;p) <span class="pl-k">const</span>
+        {
+            std::<span class="pl-c1">size_t</span> seed = <span class="pl-c1">0</span>;
+            <span class="pl-c1">spp::hash_combine</span>(seed, p.<span class="pl-smi">_first</span>);
+            <span class="pl-c1">spp::hash_combine</span>(seed, p.<span class="pl-smi">_last</span>);
+            <span class="pl-c1">spp::hash_combine</span>(seed, p.<span class="pl-smi">_age</span>);
+            <span class="pl-k">return</span> seed;
+        }
+    };
+}</pre></div>
+
+<h2>
+<a id="example-3---serialization" class="anchor" href="#example-3---serialization" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example 3 - serialization</h2>
+
+<p>sparse_hash_set and sparse_hash_map can easily be serialized/unserialized to a file or network connection.
+This support is implemented in the following APIs:</p>
+
+<div class="highlight highlight-source-c++"><pre>    <span class="pl-k">template </span>&lt;<span class="pl-k">typename</span> Serializer, <span class="pl-k">typename</span> OUTPUT&gt;
+    <span class="pl-k">bool</span> <span class="pl-en">serialize</span>(Serializer serializer, OUTPUT *stream);
+
+    <span class="pl-k">template </span>&lt;<span class="pl-k">typename</span> Serializer, <span class="pl-k">typename</span> INPUT&gt;
+    <span class="pl-k">bool</span> <span class="pl-en">unserialize</span>(Serializer serializer, INPUT *stream);</pre></div>
+
+<p>The following example demontrates how a simple sparse_hash_map can be written to a file, and then read back. The serializer we use read and writes to a file using the stdio APIs, but it would be equally simple to write a serialized using the stream APIS:</p>
+
+<div class="highlight highlight-source-c++"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>cstdio<span class="pl-pds">&gt;</span></span>
+
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>sparsepp.h<span class="pl-pds">"</span></span>
+
+<span class="pl-k">using</span> spp::sparse_hash_map;
+<span class="pl-k">using</span> <span class="pl-k">namespace</span> <span class="pl-en">std</span><span class="pl-k">;</span>
+
+<span class="pl-k">class</span> <span class="pl-en">FileSerializer</span> 
+{
+<span class="pl-k">public:</span>
+    <span class="pl-c">// serialize basic types to FILE</span>
+    <span class="pl-c">// -----------------------------</span>
+    <span class="pl-k">template </span>&lt;<span class="pl-k">class</span> <span class="pl-en">T</span>&gt;
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, <span class="pl-k">const</span> T&amp; value) 
+    {
+        <span class="pl-k">return</span> <span class="pl-c1">fwrite</span>((<span class="pl-k">const</span> <span class="pl-k">void</span> *)&amp;value, <span class="pl-k">sizeof</span>(value), <span class="pl-c1">1</span>, fp) == <span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-k">template </span>&lt;<span class="pl-k">class</span> <span class="pl-en">T</span>&gt;
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, T* value) 
+    {
+        <span class="pl-k">return</span> <span class="pl-c1">fread</span>((<span class="pl-k">void</span> *)value, <span class="pl-k">sizeof</span>(*value), <span class="pl-c1">1</span>, fp) == <span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c">// serialize std::string to FILE</span>
+    <span class="pl-c">// -----------------------------</span>
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, <span class="pl-k">const</span> string&amp; value) 
+    {
+        <span class="pl-k">const</span> <span class="pl-c1">size_t</span> size = value.<span class="pl-c1">size</span>();
+        <span class="pl-k">return</span> (*<span class="pl-v">this</span>)(fp, size) &amp;&amp; <span class="pl-c1">fwrite</span>(value.<span class="pl-c1">c_str</span>(), size, <span class="pl-c1">1</span>, fp) == <span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, string* value) 
+    {
+        <span class="pl-c1">size_t</span> size;
+        <span class="pl-k">if</span> (!(*<span class="pl-v">this</span>)(fp, &amp;size)) 
+            <span class="pl-k">return</span> <span class="pl-c1">false</span>;
+        <span class="pl-k">char</span>* buf = <span class="pl-k">new</span> <span class="pl-k">char</span>[size];
+        <span class="pl-k">if</span> (<span class="pl-c1">fread</span>(buf, size, <span class="pl-c1">1</span>, fp) != <span class="pl-c1">1</span>) 
+        {
+            <span class="pl-k">delete []</span> buf;
+            <span class="pl-k">return</span> <span class="pl-c1">false</span>;
+        }
+        <span class="pl-c1">new</span> (value) <span class="pl-c1">string</span>(buf, (<span class="pl-c1">size_t</span>)size);
+        <span class="pl-k">delete[]</span> buf;
+        <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+    }
+
+    <span class="pl-c">// serialize std::pair&lt;const string, int&gt; to FILE</span>
+    <span class="pl-c">// ---------------------------------------------------</span>
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, <span class="pl-k">const</span> std::pair&lt;<span class="pl-k">const</span> string, <span class="pl-k">int</span>&gt;&amp; value)
+    {
+        <span class="pl-k">return</span> (*<span class="pl-v">this</span>)(fp, value.<span class="pl-smi">first</span>) &amp;&amp; (*<span class="pl-v">this</span>)(fp, value.<span class="pl-smi">second</span>);
+    }
+
+    <span class="pl-k">bool</span> <span class="pl-en">operator</span>()(<span class="pl-c1">FILE</span> *fp, std::pair&lt;<span class="pl-k">const</span> string, <span class="pl-k">int</span>&gt; *value) 
+    {
+        <span class="pl-k">return</span> (*<span class="pl-v">this</span>)(fp, (string *)&amp;value-&gt;first) &amp;&amp; (*<span class="pl-v">this</span>)(fp, &amp;value-&gt;second);
+    }
+};
+
+<span class="pl-k">int</span> <span class="pl-en">main</span>(<span class="pl-k">int</span> argc, <span class="pl-k">char</span>* argv[]) 
+{
+    sparse_hash_map&lt;string, <span class="pl-k">int</span>&gt; age{ { <span class="pl-s"><span class="pl-pds">"</span>John<span class="pl-pds">"</span></span>, <span class="pl-c1">12</span> }, {<span class="pl-s"><span class="pl-pds">"</span>Jane<span class="pl-pds">"</span></span>, <span class="pl-c1">13</span> }, { <span class="pl-s"><span class="pl-pds">"</span>Fred<span class="pl-pds">"</span></span>, <span class="pl-c1">8</span> } };
+
+    <span class="pl-c">// serialize age hash_map to "ages.dmp" file</span>
+    <span class="pl-c1">FILE</span> *out = <span class="pl-c1">fopen</span>(<span class="pl-s"><span class="pl-pds">"</span>ages.dmp<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>wb<span class="pl-pds">"</span></span>);
+    age.<span class="pl-c1">serialize</span>(<span class="pl-c1">FileSerializer</span>(), out);
+    <span class="pl-c1">fclose</span>(out);
+
+    sparse_hash_map&lt;string, <span class="pl-k">int</span>&gt; age_read;
+
+    <span class="pl-c">// read from "ages.dmp" file into age_read hash_map </span>
+    <span class="pl-c1">FILE</span> *input = <span class="pl-c1">fopen</span>(<span class="pl-s"><span class="pl-pds">"</span>ages.dmp<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>rb<span class="pl-pds">"</span></span>);
+    age_read.<span class="pl-c1">unserialize</span>(<span class="pl-c1">FileSerializer</span>(), input);
+    <span class="pl-c1">fclose</span>(input);
+
+    <span class="pl-c">// print out contents of age_read to verify correct serialization</span>
+    <span class="pl-k">for</span> (<span class="pl-k">auto</span>&amp; v : age_read)
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>age_read: <span class="pl-c1">%s</span> -&gt; <span class="pl-c1">%d</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, v.<span class="pl-smi">first</span>.<span class="pl-c1">c_str</span>(), v.<span class="pl-smi">second</span>);
+}</pre></div>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/greg7mdp/sparsepp">Sparsepp</a> is maintained by <a href="https://github.com/greg7mdp">greg7mdp</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
