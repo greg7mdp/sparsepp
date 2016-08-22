@@ -775,7 +775,6 @@ void EXPECT_TRUE(bool cond)
     if (!cond)
     {
         ::fputs("Test failed:\n", stderr);
-		assert(0);
         ::exit(1);
     }
 }
