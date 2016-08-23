@@ -69,8 +69,8 @@
 //    WARNING: Any change here has to be duplicated in sparsepp.h.
 //  ----------------------------------------------------------------------
 
-#if !defined(__spp_utils__h_)
-#define __spp_utils__h_
+#if !defined(spp_utils_h_guard_)
+#define spp_utils_h_guard_
 
 #if defined(_MSC_VER) 
     #if (_MSC_VER >= 1600 )                      // vs2010 (1900 is vs2015)
@@ -271,5 +271,5 @@ struct spp_hash<double> : public std::unary_function<double, size_t>
     
 };
 
-#endif // __spp_utils__h_
+#endif // spp_utils_h_guard_
 

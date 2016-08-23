@@ -1,5 +1,5 @@
-#if !defined(__sparsepp__h_)
-#define __sparsepp__h_
+#if !defined(sparsepp_h_guard_)
+#define sparsepp_h_guard_
 
 
 // ----------------------------------------------------------------------
@@ -101,8 +101,8 @@
 
 // some macros for portability
 // ---------------------------
-#define _spp spp
-#define SPP_NAMESPACE _spp
+#define spp_ spp
+#define SPP_NAMESPACE spp_
 #define SPP_START_NAMESPACE   namespace spp {
 #define SPP_END_NAMESPACE     }
 #define SPP_GROUP_SIZE 32     // must be 32 or 64
@@ -110,11 +110,11 @@
 #define SPP_STORE_NUM_ITEMS 1 // little bit more memory, but faster!!
 
 #if (SPP_GROUP_SIZE == 32)
-    #define __SPP_SHIFT__ 5
-    #define __SPP_MASK__  0x1F    
+    #define SPP_SHIFT_ 5
+    #define SPP_MASK_  0x1F    
 #elif (SPP_GROUP_SIZE == 64)
-    #define __SPP_SHIFT__ 6
-    #define __SPP_MASK__  0x3F
+    #define SPP_SHIFT_ 6
+    #define SPP_MASK_  0x3F
 #else
     #error "SPP_GROUP_SIZE must be either 32 or 64"
 #endif
@@ -901,8 +901,8 @@ template<int S, int H> class HashObject; // for Google's benchmark, not in spp n
 //    WARNING: Any change here has to be duplicated in spp_utils.h.
 //  ----------------------------------------------------------------------
 
-#if !defined(__spp_utils__h_)
-#define __spp_utils__h_
+#if !defined(spp_utils_h_guard_)
+#define spp_utils_h_guard_
 
 #if defined(_MSC_VER) 
     #if (_MSC_VER >= 1600 )                      // vs2010 (1900 is vs2015)
@@ -1104,7 +1104,7 @@ struct spp_hash<double> : public std::unary_function<double, size_t>
     
 };
 
-#endif // __spp_utils__h_
+#endif // spp_utils_h_guard_
 
 SPP_START_NAMESPACE
 
@@ -1254,7 +1254,7 @@ inline bool operator!=(const libc_allocator_with_realloc<T>& /*unused*/,
 #ifdef SPP_NO_CXX11_STATIC_ASSERT
     template <bool> struct SppCompileAssert { };
     #define SPP_COMPILE_ASSERT(expr, msg) \
-      SPP_ATTRIBUTE_UNUSED typedef SppCompileAssert<(bool(expr))> __spp_bogus_[bool(expr) ? 1 : -1]
+      SPP_ATTRIBUTE_UNUSED typedef SppCompileAssert<(bool(expr))> spp_bogus_[bool(expr) ? 1 : -1]
 #else
     #define SPP_COMPILE_ASSERT static_assert
 #endif
@@ -1983,7 +1983,7 @@ public:
 
     // T can be std::pair<K, V>, but we need to return std::pair<const K, V>
     // ---------------------------------------------------------------------
-    typedef typename _spp::cvt<T>::type value_type;
+    typedef typename spp_::cvt<T>::type value_type;
     typedef value_type&                reference;
     typedef value_type*                pointer;
 
@@ -2169,7 +2169,7 @@ static const char spp_bits_in[256] = {
     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
 };
 
-static inline uint32_t _spp_popcount_default_lut(uint32_t i)
+static inline uint32_t s_spp_popcount_default_lut(uint32_t i)
 {
     uint32_t res = static_cast<uint32_t>(spp_bits_in[i & 0xFF]);
     res += static_cast<uint32_t>(spp_bits_in[(i >> 8)  & 0xFF]);
@@ -2178,7 +2178,7 @@ static inline uint32_t _spp_popcount_default_lut(uint32_t i)
     return res;
 }
 
-static inline uint32_t _spp_popcount_default_lut(uint64_t i)
+static inline uint32_t s_spp_popcount_default_lut(uint64_t i)
 {
     uint32_t res = static_cast<uint32_t>(spp_bits_in[i & 0xFF]);
     res += static_cast<uint32_t>(spp_bits_in[(i >>  8)  & 0xFF]);
@@ -2193,7 +2193,7 @@ static inline uint32_t _spp_popcount_default_lut(uint64_t i)
 
 // faster than the lookup table (LUT)
 // ----------------------------------
-static inline uint32_t _spp_popcount_default(uint32_t i)
+static inline uint32_t s_spp_popcount_default(uint32_t i)
 {
     i = i - ((i >> 1) & 0x55555555);
     i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
@@ -2202,7 +2202,7 @@ static inline uint32_t _spp_popcount_default(uint32_t i)
 
 // faster than the lookup table (LUT)
 // ----------------------------------
-static inline uint32_t _spp_popcount_default(uint64_t x)
+static inline uint32_t s_spp_popcount_default(uint64_t x)
 {
     const uint64_t m1  = uint64_t(0x5555555555555555); // binary: 0101...
     const uint64_t m2  = uint64_t(0x3333333333333333); // binary: 00110011..
@@ -2231,7 +2231,7 @@ static inline bool spp_popcount_check()
 static inline uint32_t spp_popcount(uint32_t i)
 {
     static const bool s_ok = spp_popcount_check(); 
-    return s_ok ? SPP_POPCNT(i) : _spp_popcount_default(i);
+    return s_ok ? SPP_POPCNT(i) : s_spp_popcount_default(i);
 }
 
 #else
@@ -2241,7 +2241,7 @@ static inline uint32_t spp_popcount(uint32_t i)
 #if defined(SPP_POPCNT)
     return static_cast<uint32_t>(SPP_POPCNT(i));
 #else
-    return _spp_popcount_default(i);
+    return s_spp_popcount_default(i);
 #endif
 }
 
@@ -2252,7 +2252,7 @@ static inline uint32_t spp_popcount(uint32_t i)
 static inline uint32_t spp_popcount(uint64_t i)
 {
     static const bool s_ok = spp_popcount_check(); 
-    return s_ok ? (uint32_t)SPP_POPCNT64(i) : _spp_popcount_default(i);
+    return s_ok ? (uint32_t)SPP_POPCNT64(i) : s_spp_popcount_default(i);
 }
 
 #else
@@ -2262,7 +2262,7 @@ static inline uint32_t spp_popcount(uint64_t i)
 #if defined(SPP_POPCNT64)
     return static_cast<uint32_t>(SPP_POPCNT64(i));
 #elif 1
-    return _spp_popcount_default(i);
+    return s_spp_popcount_default(i);
 #endif
 }
 
@@ -2591,17 +2591,17 @@ public:
     }
 
 private:
-    typedef _spp::integral_constant<bool,
-                                    (_spp::is_relocatable<value_type>::value &&
-                                     _spp::is_same<allocator_type,
-                                                   _spp::libc_allocator_with_realloc<mutable_value_type> >::value)>
+    typedef spp_::integral_constant<bool,
+                                    (spp_::is_relocatable<value_type>::value &&
+                                     spp_::is_same<allocator_type,
+                                                   spp_::libc_allocator_with_realloc<mutable_value_type> >::value)>
             realloc_and_memmove_ok; 
 
     // Our default allocator - try to merge memory buffers
     // right now it uses Google's traits, but we should use something like folly::IsRelocatable
     // return true if the slot was constructed (i.e. contains a valid mutable_value_type
     // ---------------------------------------------------------------------------------
-    bool _set_aux(Alloc &alloc, size_type offset, _spp::true_type) 
+    bool _set_aux(Alloc &alloc, size_type offset, spp_::true_type) 
     {
         //static int x=0;  if (++x < 10) printf("x\n"); // check we are getting here
         
@@ -2624,7 +2624,7 @@ private:
     // and allocator_type, with a default value
     // return true if the slot was constructed (i.e. contains a valid mutable_value_type
     // ---------------------------------------------------------------------------------
-    bool _set_aux(Alloc &alloc, size_type offset, _spp::false_type) 
+    bool _set_aux(Alloc &alloc, size_type offset, spp_::false_type) 
     {
         uint32_t  num_items = _num_items();
         uint32_t  num_alloc = _sizing(num_items);
@@ -2720,7 +2720,7 @@ private:
     // constructor and destructor, and the allocator_type is the default
     // libc_allocator_with_alloc. 
     // -----------------------------------------------------------------------
-    void _group_erase_aux(Alloc &alloc, size_type offset, _spp::true_type) 
+    void _group_erase_aux(Alloc &alloc, size_type offset, spp_::true_type) 
     {
         // static int x=0;  if (++x < 10) printf("Y\n"); // check we are getting here
         uint32_t  num_items = _num_items();
@@ -2751,7 +2751,7 @@ private:
     // Shrink the array, without any special assumptions about value_type and
     // allocator_type.
     // --------------------------------------------------------------------------
-    void _group_erase_aux(Alloc &alloc, size_type offset, _spp::false_type) 
+    void _group_erase_aux(Alloc &alloc, size_type offset, spp_::false_type) 
     {
         uint32_t  num_items = _num_items();
         uint32_t  num_alloc   = _sizing(num_items);
@@ -3129,12 +3129,12 @@ public:
 
     typename group_type::size_type pos_in_group(size_type i) const 
     {
-        return static_cast<typename group_type::size_type>(i & __SPP_MASK__);
+        return static_cast<typename group_type::size_type>(i & SPP_MASK_);
     }
     
     size_type group_num(size_type i) const
     {
-        return (size_type)(i >> __SPP_SHIFT__);
+        return (size_type)(i >> SPP_SHIFT_);
     }
 
     GroupsReference which_group(size_type i) 
@@ -4824,7 +4824,7 @@ private:
             return EqualKey::operator()(a, b);
         }
 
-        typename _spp::remove_const<key_type>::type delkey;
+        typename spp_::remove_const<key_type>::type delkey;
     };
 
     // Utility functions to access the templated operators
@@ -4925,7 +4925,7 @@ private:
     };
 
     // The actual data
-    typedef sparse_hashtable<std::pair<typename _spp::remove_const<Key>::type, T>, Key, HashFcn, SelectKey,
+    typedef sparse_hashtable<std::pair<typename spp_::remove_const<Key>::type, T>, Key, HashFcn, SelectKey,
                              SetKey, EqualKey, Alloc> ht;
 
 public:
@@ -5623,4 +5623,4 @@ inline void swap(sparse_hash_set<Val, HashFcn, EqualKey, Alloc>& hs1,
 
 SPP_END_NAMESPACE
 
-#endif // __sparsepp__h_
+#endif // sparsepp_h_guard_
