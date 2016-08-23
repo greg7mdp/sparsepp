@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.org/greg7mdp/sparsepp.svg?branch=master)
+
 # Sparsepp: A fast, memory efficient hash map for C++
 
 Sparsepp is derived from Google's excellent [sparsehash](https://github.com/sparsehash/sparsehash) implementation. It aims to achieve the following objectives:
