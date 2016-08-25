@@ -1,4 +1,4 @@
-![Build Status](https://travis-ci.org/greg7mdp/sparsepp.svg?branch=master)
+[![Build Status](https://travis-ci.org/greg7mdp/sparsepp.svg?branch=master)](https://travis-ci.org/greg7mdp/sparsepp)
 
 # Sparsepp: A fast, memory efficient hash map for C++
 
