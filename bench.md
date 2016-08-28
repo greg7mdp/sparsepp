@@ -4,7 +4,7 @@
 
         1. Looking for a great hash map
         2. Google Sparsehash: brilliant idea, sparse version a bit slow and dated
-        3. Introducing [Sparsepp](https://github.com/greg7mdp/sparsepp): fast, memory efficient, C++11, single header
+        3. Introducing Sparsepp: fast, memory efficient, C++11, single header
 
 
 ### Hashtables, sparse and dense, maps and btrees - Memory usage
