@@ -13,7 +13,7 @@ First, let's compare two separate versions of std::unordered_map, from Boost and
 
 The graph below shows the memory usage when inserting `std::pair<uint64_t, uint64_t>` into the unordered_map.
 
-![unordered_map memory usage](https://github.com/greg7mdp/img/blob/master/sparsepp/umap_mem.PNG?raw=true)
+![unordered_map memory usage](https://github.com/greg7mdp2/img/blob/master/sparsepp/umap_mem.PNG?raw=true)
 
 With this test, we see that Boost's implementation uses significantly more memory that the g++ version, and indeed it is unable to insert 100 Million entries into the map without running out of memory. Since the pairs we insert into the map are 16 bytes each, the minimum expected memory usage would be 1.6 GB. We see on the graph that g++ needs just a hair over 4 GB.
 
@@ -24,7 +24,7 @@ The [Sparsehash](https://github.com/sparsehash/sparsehash) library is a header-o
 The [cpp-btree](https://code.google.com/archive/p/cpp-btree/) library was open-sourced by Google in 2013. Although not a hash map, but a map storing ordered elements, I thought it would be interesting to include it because it claims low memory usage, and good performance thanks to cache friendliness.
 
 
-![Google memory usage](https://github.com/greg7mdp/img/blob/master/sparsepp/goog_mem.PNG?raw=true)
+![Google memory usage](https://github.com/greg7mdp2/img/blob/master/sparsepp/goog_mem.PNG?raw=true)
 
 So what do we see here? 
 
@@ -51,20 +51,20 @@ Memory usage is one thing, but we also need efficient containers allowing fast i
   API used: `pair<iterator,bool> insert(const value_type& val);`
 
 
-  ![insert](https://github.com/greg7mdp/img/blob/master/sparsepp/goog_insert.PNG?raw=true)
+  ![insert](https://github.com/greg7mdp2/img/blob/master/sparsepp/goog_insert.PNG?raw=true)
 
 
 2. Random Lookup: we measured the time needed to retrieve N entries known to be present in the array, plus N entries with only a 10% probablility to be present. 
   API used: `iterator find(const key_type& k);`
 
 
-  ![lookup](https://github.com/greg7mdp/img/blob/master/sparsepp/goog_lookup.PNG?raw=true)
+  ![lookup](https://github.com/greg7mdp2/img/blob/master/sparsepp/goog_lookup.PNG?raw=true)
 
 
 3. Delete: we measured the time needed to delete the N entries known to be present in the array. Entries had been inserted in random order, and are deleted in a different random order. 
   API used: `size_type erase(const key_type& k);`
 
-  ![delete](https://github.com/greg7mdp/img/blob/master/sparsepp/goog_delete.PNG?raw=true)
+  ![delete](https://github.com/greg7mdp2/img/blob/master/sparsepp/goog_delete.PNG?raw=true)
 
 
 What can we conclude from these tests? Here are my observations:
@@ -96,30 +96,30 @@ Regardless, after a few months of work on evenings and week-ends, I am proud to 
 
 The graphs below show the relative performance (purple line) of the [Sparsepp](https://github.com/greg7mdp/sparsepp) sparse_hash_map compared to the other implementations:
 
-`note: **Sparse++** in the graphs legend is actually **Sparsepp**.`
+`Note: "Sparse++" in the graphs legend is actually "Sparsepp".`
 
 1. Random Insert: [Sparsepp](https://github.com/greg7mdp/sparsepp), while still slower than the dense_hash_map, is significantly faster than the original sparse_hash_map and the btree_map, and as fast as the two std::unordered_map implementations.
 
-  ![insert](https://github.com/greg7mdp/img/blob/master/sparsepp/spp_insert.PNG?raw=true)
+  ![insert](https://github.com/greg7mdp2/img/blob/master/sparsepp/spp_insert.PNG?raw=true)
 
 2. Random Lookup (find): [Sparsepp](https://github.com/greg7mdp/sparsepp) is faster than all other alternatives, except for dense_hash_map.
 
-  ![lookup](https://github.com/greg7mdp/img/blob/master/sparsepp/spp_lookup.PNG?raw=true)
+  ![lookup](https://github.com/greg7mdp2/img/blob/master/sparsepp/spp_lookup.PNG?raw=true)
 
 3. Delete (erase): [Sparsepp](https://github.com/greg7mdp/sparsepp) is again doing very well, outperformed only by dense_hash_map. We should note that unlike the original sparse_hash_map, [Sparsepp](https://github.com/greg7mdp/sparsepp)'s sparse_hash_map does release the memory on erase, instead of just overwriting the memory with the deleted key value. Indeed, the non-standard APIs set_deleted_key() and set_empty_key(), while still present for compatibility with the original sparse_hash_map, are no longer necessary or useful.
 
-  ![delete](https://github.com/greg7mdp/img/blob/master/sparsepp/spp_delete.PNG?raw=true)
+  ![delete](https://github.com/greg7mdp2/img/blob/master/sparsepp/spp_delete.PNG?raw=true)
 
 
 Looks good, but what is the cost of using [Sparsepp](https://github.com/greg7mdp/sparsepp) versus the original sparse_hash_map in memory usage:
 
-  ![delete](https://github.com/greg7mdp/img/blob/master/sparsepp/spp_mem.PNG?raw=true)
+  ![delete](https://github.com/greg7mdp2/img/blob/master/sparsepp/spp_mem.PNG?raw=true)
 
 Not bad! While [Sparsepp](https://github.com/greg7mdp/sparsepp) memory usage is a little bit higher than the original sparse_hash_map, it is still memory friendly, and there are no memory spikes when the map resizes. We can see that when moving from 60M entries to 70M entries, both Google's dense and [Sparsepp](https://github.com/greg7mdp/sparsepp) hash_maps needed a resize to accomodate the 70M elements. The resize proved fatal for the dense_hash_map, who could not allocate the 6GB needed for the resize + copy, while the [Sparsepp](https://github.com/greg7mdp/sparsepp) sparse_hash_map had no problem.
 
 In order to validate that the sparse hash tables can indeed grow to accomodate many more entries than regular hash tables, we decided to run a test that would gounsert items until all tables run out of memory, the result of which is presented in the two graphs below:
 
-  ![SPP_ALLOC_SZ_0](https://github.com/greg7mdp/img/blob/master/sparsepp/insert_large_0.PNG?raw=true)
+  ![SPP_ALLOC_SZ_0](https://github.com/greg7mdp2/img/blob/master/sparsepp/insert_large_0.PNG?raw=true)
 
 The table below display the maximum number of entries that could be added to each map before it ran out of memory. As a reminder, the VM had 5.7GB free before each test, and each entry is 16 bytes.
 
@@ -140,7 +140,7 @@ to
 
 With this change, we get the graphs below:
 
-  ![SPP_ALLOC_SZ_1](https://github.com/greg7mdp/img/blob/master/sparsepp/insert_large_1.PNG?raw=true)
+  ![SPP_ALLOC_SZ_1](https://github.com/greg7mdp2/img/blob/master/sparsepp/insert_large_1.PNG?raw=true)
 
 Now the memory usage of [Sparsepp](https://github.com/greg7mdp/sparsepp) is reduced to just a little bit more than Google's sparse_hash_map, and both sparse map implementations are able to insert 240 Million entries, but choke at 260 Million. [Sparsepp](https://github.com/greg7mdp/sparsepp) is a little bit slower on insert, but still significantly faster than Google's sparse_hash_map. Lookup performance (not graphed) is unchanged.
 
