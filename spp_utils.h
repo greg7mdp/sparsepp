@@ -124,14 +124,19 @@ namespace SPP_NAMESPACE
 {
 
 template <class T>
-struct spp_hash : public SPP_HASH_CLASS<T>
+struct spp_hash
 {
+    SPP_INLINE size_t operator()(T *__v) const SPP_NOEXCEPT 
+    {
+        SPP_HASH_CLASS<T> hasher;
+        return hasher(__v);
+    }
 };
 
 template <class T>
 struct spp_hash<T *>
 {
-    static size_t spp_log2 (size_t val) 
+    static size_t spp_log2 (size_t val) SPP_NOEXCEPT 
     {
         size_t res = 0;
         while (val > 1) 
@@ -194,25 +199,25 @@ struct spp_hash<unsigned short> : public std::unary_function<unsigned short, siz
 template <>
 struct spp_hash<int> : public std::unary_function<int, size_t>
 {
-    SPP_INLINE size_t operator()(int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v ^ 0xdeadbea6);}
+    SPP_INLINE size_t operator()(int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
 };
 
 template <>
 struct spp_hash<unsigned int> : public std::unary_function<unsigned int, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v ^ 0xdeadbea6);}
+    SPP_INLINE size_t operator()(unsigned int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
 };
 
 template <>
 struct spp_hash<long> : public std::unary_function<long, size_t>
 {
-    SPP_INLINE size_t operator()(long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v ^ 0xdeadbea6);}
+    SPP_INLINE size_t operator()(long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
 };
 
 template <>
 struct spp_hash<unsigned long> : public std::unary_function<unsigned long, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v ^ 0xdeadbea6);}
+    SPP_INLINE size_t operator()(unsigned long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -239,35 +244,35 @@ struct spp_hash<double> : public std::unary_function<double, size_t>
 };
 #endif
 
-    template <class T, int sz> struct Combiner
-    {
-        inline void operator()(T& seed, T value);
-    };
+template <class T, int sz> struct Combiner
+{
+    inline void operator()(T& seed, T value);
+};
 
-    template <class T> struct Combiner<T, 4>
+template <class T> struct Combiner<T, 4>
+{
+    inline void  operator()(T& seed, T value)
     {
-        inline void  operator()(T& seed, T value)
-        {
-            seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-    };
-
-    template <class T> struct Combiner<T, 8>
-    {
-        inline void  operator()(T& seed, T value)
-        {
-            seed ^= value + T(0xc6a4a7935bd1e995) + (seed << 6) + (seed >> 2);
-        }
-    };
-
-    template <class T>
-    inline void hash_combine(std::size_t& seed, T const& v)
-    {
-        spp::spp_hash<T> hasher;
-        Combiner<std::size_t, sizeof(std::size_t)> combiner;
-
-        combiner(seed, hasher(v));
+        seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
+};
+
+template <class T> struct Combiner<T, 8>
+{
+    inline void  operator()(T& seed, T value)
+    {
+        seed ^= value + T(0xc6a4a7935bd1e995) + (seed << 6) + (seed >> 2);
+    }
+};
+
+template <class T>
+inline void hash_combine(std::size_t& seed, T const& v)
+{
+    spp::spp_hash<T> hasher;
+    Combiner<std::size_t, sizeof(std::size_t)> combiner;
+
+    combiner(seed, hasher(v));
+}
     
 };
 

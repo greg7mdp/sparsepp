@@ -130,7 +130,7 @@ The table below display the maximum number of entries that could be added to eac
 
 Both sparse hash implementations, as well as Google's btree_map are significantly more memory efficient than the classic unordered_maps. They are also significantly slower that [Sparsepp](https://github.com/greg7mdp/sparsepp). 
 
-If we are willing to sacrifice somea little bit of insertion performance for improved memory efficiency, it is easily done with a simple change in [Sparsepp](https://github.com/greg7mdp/sparsepp) header file `sparsepp.h`. Just change:
+If we are willing to sacrifice a little bit of insertion performance for improved memory efficiency, it is easily done with a simple change in [Sparsepp](https://github.com/greg7mdp/sparsepp) header file `sparsepp.h`. Just change:
 
 `#define SPP_ALLOC_SZ 0`
 
