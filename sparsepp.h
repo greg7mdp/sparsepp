@@ -94,7 +94,7 @@
 #if defined __clang__ 
 
     #include <cpuid.h>
-    void cpuid(int info[4], int InfoType) {
+    void spp_cpuid(int info[4], int InfoType) {
         __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
     }
 
@@ -301,7 +301,7 @@
     // #pragma message(VAR_NAME_VALUE(SPP_GCC_VERSION))
 
     #include <cpuid.h>
-    void cpuid(int info[4], int InfoType) {
+    void spp_cpuid(int info[4], int InfoType) {
         __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
     }
 
@@ -609,7 +609,7 @@
     #include <intrin.h>                     // for __popcnt()
 
     #define SPP_POPCNT_CHECK  // slower when defined, but we have to check!
-    #define cpuid(info, x)    __cpuid(info, x)
+    #define spp_cpuid(info, x)    __cpuid(info, x)
 
     #define SPP_POPCNT __popcnt
     #if (SPP_GROUP_SIZE == 64 && INTPTR_MAX == INT64_MAX)
@@ -2218,7 +2218,7 @@ static inline uint32_t s_spp_popcount_default(uint64_t x)
 static inline bool spp_popcount_check()
 {
     int cpuInfo[4] = { -1 };
-    cpuid(cpuInfo, 1);
+    spp_cpuid(cpuInfo, 1);
     if (cpuInfo[2] & (1 << 23))
         return true;   // means SPP_POPCNT supported
     return false;
