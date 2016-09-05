@@ -94,7 +94,7 @@
 #if defined __clang__ 
 
     #include <cpuid.h>
-    void spp_cpuid(int info[4], int InfoType) {
+    inline void spp_cpuid(int info[4], int InfoType) {
         __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
     }
 
@@ -301,7 +301,7 @@
     // #pragma message(VAR_NAME_VALUE(SPP_GCC_VERSION))
 
     #include <cpuid.h>
-    void spp_cpuid(int info[4], int InfoType) {
+    inline void spp_cpuid(int info[4], int InfoType) {
         __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
     }
 
