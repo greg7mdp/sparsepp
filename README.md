@@ -247,16 +247,18 @@ public:
         return true;
     }
 
-    // serialize std::pair<const string, int> to FILE
-    // ---------------------------------------------------
-    bool operator()(FILE *fp, const std::pair<const string, int>& value)
+    // serialize std::pair<const A, B> to FILE - needed for maps
+    // ---------------------------------------------------------
+    template <class A, class B>
+    bool operator()(FILE *fp, const std::pair<const A, B>& value)
     {
         return (*this)(fp, value.first) && (*this)(fp, value.second);
     }
 
-    bool operator()(FILE *fp, std::pair<const string, int> *value) 
+    template <class A, class B>
+    bool operator()(FILE *fp, std::pair<const A, B> *value) 
     {
-        return (*this)(fp, (string *)&value->first) && (*this)(fp, &value->second);
+        return (*this)(fp, (A *)&value->first) && (*this)(fp, &value->second);
     }
 };
 
