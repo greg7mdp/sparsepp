@@ -928,7 +928,7 @@ namespace SPP_NAMESPACE
 template <class T>
 struct spp_hash
 {
-    SPP_INLINE size_t operator()(T *__v) const SPP_NOEXCEPT 
+    SPP_INLINE size_t operator()(const T &__v) const SPP_NOEXCEPT 
     {
         SPP_HASH_CLASS<T> hasher;
         return hasher(__v);
@@ -949,10 +949,10 @@ struct spp_hash<T *>
         return res;
     }
 
-    SPP_INLINE size_t operator()(T *__v) const SPP_NOEXCEPT 
+    SPP_INLINE size_t operator()(const T *__v) const SPP_NOEXCEPT 
     {
         static const size_t shift = spp_log2(1 + sizeof(T));
-        return static_cast<size_t>((*(reinterpret_cast<uintptr_t *>(&__v))) >> shift);
+        return static_cast<size_t>((*(reinterpret_cast<const uintptr_t *>(&__v))) >> shift);
     }
 };
 
