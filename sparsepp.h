@@ -3221,8 +3221,11 @@ public:
         // ........ .... .... .. .. .. .. .  .  .  .  .  .  .  .
         //     8     12   16  18 20 22 24 25 26   ...          32
         // ------------------------------------------------------
-        if (s_alloc_batch_sz[1])
-            return; // already initialized
+        // if (s_alloc_batch_sz[1])
+        //    return; // already initialized
+        // always initialize because we can rely on static memory being initialized when this table's 
+        // constructor is executed (as this table may also be a static)
+        // ---------------------------------------------------------------------------------------------
         uint8_t group_sz          = SPP_GROUP_SIZE / 4;
         uint8_t group_start_alloc = SPP_GROUP_SIZE / 8; //4;
         uint8_t alloc_sz          = group_start_alloc;
