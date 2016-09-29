@@ -93,10 +93,12 @@
 // ------------------------
 #if defined __clang__ 
 
-    #include <cpuid.h>
-    inline void spp_cpuid(int info[4], int InfoType) {
-        __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
-    }
+    #if defined(i386)
+        #include <cpuid.h>
+        inline void spp_cpuid(int info[4], int InfoType) {
+            __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+        }
+    #endif
 
     #define SPP_POPCNT   __builtin_popcount
     #define SPP_POPCNT64 __builtin_popcountll
@@ -300,10 +302,12 @@
     // #define VAR_NAME_VALUE(var) #var "="  VALUE(var)
     // #pragma message(VAR_NAME_VALUE(SPP_GCC_VERSION))
 
-    #include <cpuid.h>
-    inline void spp_cpuid(int info[4], int InfoType) {
-        __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
-    }
+    #if defined(i386)
+        #include <cpuid.h>
+        inline void spp_cpuid(int info[4], int InfoType) {
+            __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+        }
+    #endif
 
     // __POPCNT__ defined when the compiled with popcount support 
     // (-mpopcnt compiler option is given for example)
