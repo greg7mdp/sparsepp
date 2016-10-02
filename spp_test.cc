@@ -1475,6 +1475,8 @@ TYPED_TEST(HashtableIntTest, Typedefs)
     (void)dt;
     (void)p;
     (void)cp;
+    (void)kt;
+    (void)st;
     i = this->ht_.begin();
     ci = this->ht_.begin();
     li = this->ht_.begin(0);
