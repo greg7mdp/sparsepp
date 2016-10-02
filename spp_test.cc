@@ -835,7 +835,7 @@ struct TypeList3
   typedef typelist::type1 classname##_type6;    \
   typedef typelist::type1 classname##_type7;   \
   typedef typelist::type1 classname##_type8;   \
-  typedef typelist::type1 classname##_type9; 
+  typedef typelist::type1 classname##_type9
 
 template<typename C1, typename C2, typename C3, typename C4, typename C5,
          typename C6, typename C7, typename C8, typename C9> 
@@ -862,7 +862,7 @@ struct TypeList9
   typedef typelist::type7 classname##_type7;    \
   typedef typelist::type8 classname##_type8;    \
   typedef typelist::type9 classname##_type9;    \
-  static const int classname##_numtypes = 9;
+  static const int classname##_numtypes = 9
 
 #define TYPED_TEST(superclass, testname)                                \
   template<typename TypeParam>                                          \
