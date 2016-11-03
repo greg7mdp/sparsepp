@@ -1412,14 +1412,8 @@ namespace sparsehash_internal
     // Settings contains parameters for growing and shrinking the table.
     // It also packages zero-size functor (ie. hasher).
     //
-    // It does some munging of the hash value in cases where we think
-    // (fear) the original hash function might not be very good.  In
-    // particular, the default hash of pointers is the identity hash,
-    // so probably all the low bits are 0.  We identify when we think
-    // we're hashing a pointer, and chop off the low bits.  Note this
-    // isn't perfect: even when the key is a pointer, we can't tell
-    // for sure that the hash is the identity hash.  If it's not, this
-    // is needless work (and possibly, though not likely, harmful).
+    // It does some munging of the hash value for the cases where 
+    // the original hash function is not be very good.
     // ---------------------------------------------------------------
     template<typename Key, typename HashFunc,
              typename SizeType, int HT_MIN_BUCKETS>
@@ -1435,7 +1429,8 @@ namespace sparsehash_internal
         {
             inline T operator()(T h) const
             {
-                return h + (h >> 7) + (h >> 13) + (h >> 23);
+                h ^= (h >> 17);
+                return h + (h >> 7);
             }
         };
 
@@ -1443,7 +1438,19 @@ namespace sparsehash_internal
         {
             inline T operator()(T h) const
             {
-                return h + (h >> 7) + (h >> 13) + (h >> 23) + (h >> 32);
+#if 0
+                // murmurhash - slower
+                h ^= (h >> 33);
+                h *= 0xff51afd7ed558ccd;
+                h ^= (h >> 33);
+                h *= 0xc4ceb9fe1a85ec53;
+                h ^= (h >> 33);
+                return h;
+#else
+                h ^= (h >> 33);
+                h ^= (h >> 17);
+                return h + (h >> 7);
+#endif
             }
         };
 
