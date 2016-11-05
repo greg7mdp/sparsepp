@@ -1420,6 +1420,12 @@ namespace sparsehash_internal
     class sh_hashtable_settings : public HashFunc 
     {
     private:
+#ifdef SPP_NO_MIX
+        template <class T, int sz> struct Mixer
+        {
+            inline T operator()(T h) const { return h; }
+        };
+#else
         template <class T, int sz> struct Mixer
         {
             inline T operator()(T h) const;
@@ -1430,7 +1436,7 @@ namespace sparsehash_internal
             inline T operator()(T h) const
             {
                 h ^= (h >> 17);
-                return h + (h >> 7);
+                return h ^ (h >> 7);
             }
         };
 
@@ -1438,21 +1444,14 @@ namespace sparsehash_internal
         {
             inline T operator()(T h) const
             {
-#if 0
-                // murmurhash - slower
-                h ^= (h >> 33);
-                h *= 0xff51afd7ed558ccd;
-                h ^= (h >> 33);
-                h *= 0xc4ceb9fe1a85ec53;
-                h ^= (h >> 33);
-                return h;
-#else
+                // murmurhash good, but significantly slows dow all functions by *2 or more
+                // -> just make sure all the bits of the hash affect our modulo operation.
                 h ^= (h >> 33);
                 h ^= (h >> 17);
-                return h + (h >> 7);
-#endif
+                return h ^ (h >> 7);
             }
         };
+#endif
 
     public:
         typedef Key key_type;
