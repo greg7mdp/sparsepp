@@ -1469,6 +1469,14 @@ TEST(HashtableTest, ModifyViaIterator)
 {
     // This only works for hash-maps, since only they have non-const values.
     {
+        int i;
+        sparse_hash_map<int *, int> ht2;
+        ht2[&i] = 3;
+
+        struct Bogus;
+        sparse_hash_map<Bogus *, int> ht3;
+        ht3[(Bogus *)0] = 8;
+
         sparse_hash_map<int, int> ht;
         ht[1] = 2;
         sparse_hash_map<int, int>::iterator it = ht.find(1);

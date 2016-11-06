@@ -920,6 +920,12 @@ template<int S, int H> class HashObject; // for Google's benchmark, not in spp n
     #define SPP_NOEXCEPT noexcept
 #endif
 
+#ifdef SPP_NO_CXX11_CONSTEXPR
+    #define SPP_CONSTEXPR
+#else
+    #define SPP_CONSTEXPR constexpr
+#endif
+
 #define SPP_INLINE
 
 #ifndef SPP_NAMESPACE
@@ -955,7 +961,7 @@ struct spp_hash<T *>
 
     SPP_INLINE size_t operator()(const T *__v) const SPP_NOEXCEPT 
     {
-        static const size_t shift = spp_log2(1 + sizeof(T));
+        static const size_t shift = 3; // spp_log2(1 + sizeof(T)); // T might be incomplete!
         return static_cast<size_t>((*(reinterpret_cast<const uintptr_t *>(&__v))) >> shift);
     }
 };
