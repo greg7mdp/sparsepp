@@ -4548,17 +4548,13 @@ private:
 
 public:
 
-#if 0 && !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
     template <class... Args>
-    pair<iterator, bool> emplace(Args&&... args) 
+    std::pair<iterator, bool> emplace(Args&&... args) 
     {
-        return rep.emplace_unique(std::forward<Args>(args)...);
-    }
-
-    template <class... Args>
-    iterator emplace_hint(const_iterator p, Args&&... args)
-    {
-        return rep.emplace_unique(std::forward<Args>(args)...).first;
+        _resize_delta(1);  
+        mutable_value_type obj(std::forward<Args>(args)...);
+        return _insert_noresize(obj);;
     }
 #endif
 
@@ -5165,6 +5161,20 @@ public:
         return it->second;
     }
 
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+    template <class... Args>
+    std::pair<iterator, bool> emplace(Args&&... args) 
+    {
+        return rep.emplace(std::forward<Args>(args)...);
+    }
+
+    template <class... Args>
+    iterator emplace_hint(const_iterator p, Args&&... args)
+    {
+        return rep.emplace(std::forward<Args>(args)...).first;
+    }
+#endif
+
     // Insert
     // ------
     std::pair<iterator, bool> 
@@ -5508,17 +5518,17 @@ public:
     std::pair<iterator, iterator> 
     equal_range(const key_type& key) const       { return rep.equal_range(key); }
 
-#if 0 && !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
     template <class... Args>
-    pair<iterator, bool> emplace(Args&&... args) 
+    std::pair<iterator, bool> emplace(Args&&... args) 
     {
-        return rep.emplace_unique(std::forward<Args>(args)...);
+        return rep.emplace(std::forward<Args>(args)...);
     }
 
     template <class... Args>
     iterator emplace_hint(const_iterator p, Args&&... args)
     {
-        return rep.emplace_unique(std::forward<Args>(args)...).first;
+        return rep.emplace(std::forward<Args>(args)...).first;
     }
 #endif
 

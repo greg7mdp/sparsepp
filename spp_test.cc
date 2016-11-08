@@ -1465,9 +1465,41 @@ TYPED_TEST(HashtableAllTest, NormalIterators)
     }
 }
 
-TEST(HashtableTest, ModifyViaIterator) 
+
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+
+template <class T> struct MyHash;
+typedef std::pair<std::string, std::string> StringPair;
+
+template<> struct MyHash<StringPair>
 {
-    // This only works for hash-maps, since only they have non-const values.
+    size_t operator()(StringPair const& p) const 
+    {
+        return std::hash<string>()(p.first);
+    }
+};
+
+TEST(HashtableTest, Emplace) 
+{
+    {
+        sparse_hash_map<std::string, std::string> mymap;
+
+        mymap.emplace ("NCC-1701", "J.T. Kirk");
+        mymap.emplace ("NCC-1701-D", "J.L. Picard");
+        mymap.emplace ("NCC-74656", "K. Janeway");
+        EXPECT_TRUE(mymap["NCC-74656"] == std::string("K. Janeway"));
+
+        sparse_hash_set<StringPair, MyHash<StringPair> > myset;
+        myset.emplace ("NCC-1701", "J.T. Kirk");
+
+    }
+}
+#endif
+
+
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+TEST(HashtableTest, IncompleteTypes) 
+{
     {
         int i;
         sparse_hash_map<int *, int> ht2;
@@ -1477,6 +1509,14 @@ TEST(HashtableTest, ModifyViaIterator)
         sparse_hash_map<Bogus *, int> ht3;
         ht3[(Bogus *)0] = 8;
 
+    }
+}
+#endif
+
+TEST(HashtableTest, ModifyViaIterator) 
+{
+    // This only works for hash-maps, since only they have non-const values.
+    {
         sparse_hash_map<int, int> ht;
         ht[1] = 2;
         sparse_hash_map<int, int>::iterator it = ht.find(1);
