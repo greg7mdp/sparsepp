@@ -3536,6 +3536,27 @@ public:
                 _first_group[current_row].offset_to_pos(current_col));
     }
 
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+    // This returns a reference to the inserted item (which is a copy of val)
+    // The trick is to figure out whether we're replacing or inserting anew
+    // This takes a reference, not a const reference, for when we insert objects
+    // that are movable but not copyable.
+    // ----------------------------------------------------------------------
+    reference set(size_type i, reference val, bool erased = false) 
+    {
+        assert(i < _table_size);
+        group_type &group = which_group(i);
+        typename group_type::size_type old_numbuckets = group.num_nonempty();
+        typename group_type::SetResult sr(group.set(_alloc, pos_in_group(i), erased));
+        if (!sr.second)
+            ::new (sr.first) mutable_value_type(std::move(val));
+        else
+            *sr.first = std::move(val);
+        _num_buckets += group.num_nonempty() - old_numbuckets;
+        return *((pointer)sr.first);
+    }
+#endif
+
     // This returns a reference to the inserted item (which is a copy of val)
     // The trick is to figure out whether we're replacing or inserting anew
     // ----------------------------------------------------------------------
@@ -4495,7 +4516,8 @@ public:
     // INSERTION ROUTINES
 private:
     // Private method used by insert_noresize and find_or_insert.
-    reference _insert_at(const_reference obj, size_type pos, bool erased) 
+    template <class T>
+    reference _insert_at(T& obj, size_type pos, bool erased) 
     {
         if (size() >= max_size()) 
         {
@@ -4510,7 +4532,8 @@ private:
     }
 
     // If you know *this is big enough to hold obj, use this routine
-    std::pair<iterator, bool> _insert_noresize(const_reference obj) 
+    template <class T>
+    std::pair<iterator, bool> _insert_noresize(T& obj) 
     {
         Position pos = _find_position(get_key(obj));
         bool already_there = (pos._t == pt_full);
@@ -4553,8 +4576,8 @@ public:
     std::pair<iterator, bool> emplace(Args&&... args) 
     {
         _resize_delta(1);  
-        mutable_value_type obj(std::forward<Args>(args)...);
-        return _insert_noresize(obj);;
+        value_type obj(std::forward<Args>(args)...);
+        return _insert_noresize(obj);
     }
 #endif
 
@@ -4597,12 +4620,14 @@ public:
                 {
                     // needed to rehash to make room
                     // Since we resized, we can't use pos, so recalculate where to insert.
-                    return *(_insert_noresize(default_value(key)).first);
+                    value_type def(default_value(key));
+                    return *(_insert_noresize(def).first);
                 } 
                 else 
                 {
                     // no need to rehash, insert right here
-                    return _insert_at(default_value(key), erased ? erased_pos : bucknum, erased);
+                    value_type def(default_value(key));
+                    return _insert_at(def, erased ? erased_pos : bucknum, erased);
                 }
             }
             if (grp_pos.test())
