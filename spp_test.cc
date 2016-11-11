@@ -1479,6 +1479,36 @@ template<> struct MyHash<StringPair>
     }
 };
 
+class MovableOnlyType 
+{
+    std::string one = "one";
+    std::string two = "two";
+    std::uint32_t three = 3;
+    std::uint64_t four = 4;
+    std::uint64_t five = 5;
+
+public:
+    // Make object movable and non-copyable
+    MovableOnlyType(MovableOnlyType &&) = default;
+    MovableOnlyType& operator=(MovableOnlyType &&) = default;
+    MovableOnlyType() = default;
+};
+
+void movable_emplace_test(std::size_t iterations, std::size_t container_size) 
+{
+    for (std::size_t i=0;i<iterations;++i) 
+    {
+        spp::sparse_hash_map<std::string,MovableOnlyType> m;
+        m.reserve(container_size);
+        char buff[20];
+        for (int j=0; j<container_size; ++j) 
+        {
+            sprintf(buff, "%d", j);
+            m.emplace(buff, MovableOnlyType());
+        }
+    }
+}
+
 TEST(HashtableTest, Emplace) 
 {
     {
@@ -1491,8 +1521,9 @@ TEST(HashtableTest, Emplace)
 
         sparse_hash_set<StringPair, MyHash<StringPair> > myset;
         myset.emplace ("NCC-1701", "J.T. Kirk");
-
     }
+    
+    movable_emplace_test(10, 50);
 }
 #endif
 
