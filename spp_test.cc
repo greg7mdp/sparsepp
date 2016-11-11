@@ -1481,17 +1481,14 @@ template<> struct MyHash<StringPair>
 
 class MovableOnlyType 
 {
-    std::string one = "one";
-    std::string two = "two";
-    std::uint32_t three = 3;
-    std::uint64_t four = 4;
-    std::uint64_t five = 5;
+    std::string   _str;
+    std::uint64_t _int;
 
 public:
     // Make object movable and non-copyable
     MovableOnlyType(MovableOnlyType &&) = default;
     MovableOnlyType& operator=(MovableOnlyType &&) = default;
-    MovableOnlyType() = default;
+    MovableOnlyType() : _str("whatever"), _int(2) {}
 };
 
 void movable_emplace_test(std::size_t iterations, std::size_t container_size) 
