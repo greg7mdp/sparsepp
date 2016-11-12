@@ -5057,7 +5057,7 @@ public:
     }
 
     template <class... Args>
-    iterator emplace_hint(const_iterator p, Args&&... args)
+    iterator emplace_hint(const_iterator , Args&&... args)
     {
         return rep.emplace(std::forward<Args>(args)...).first;
     }
@@ -5414,7 +5414,7 @@ public:
     }
 
     template <class... Args>
-    iterator emplace_hint(const_iterator p, Args&&... args)
+    iterator emplace_hint(const_iterator , Args&&... args)
     {
         return rep.emplace(std::forward<Args>(args)...).first;
     }
