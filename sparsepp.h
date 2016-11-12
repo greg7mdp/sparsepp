@@ -1736,34 +1736,6 @@ template <class T, class U> struct is_relocatable<std::pair<T, U> > :
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-template <class tabletype>
-class table_element_adaptor 
-{
-public:
-    typedef typename tabletype::value_type value_type;
-    typedef typename tabletype::size_type  size_type;
-    typedef typename tabletype::reference  reference;
-    typedef typename tabletype::pointer    pointer;
-
-    table_element_adaptor(tabletype *tbl, size_type p) :
-        table(tbl), pos(p) 
-    { }
-
-    table_element_adaptor& operator=(const value_type &val)
-    {
-        table->set(pos, val, false);
-        return *this;
-    }
-
-    operator value_type() { return table->get(pos); }   // we look like a value
-
-    pointer operator& () { return &table->mutating_get(pos); }
-
-private:
-    tabletype* table;
-    size_type pos;
-};
-
 // Our iterator as simple as iterators can be: basically it's just
 // the index into our table.  Dereference, the only complicated
 // thing, we punt to the table class.  This just goes to show how
@@ -1786,22 +1758,10 @@ public:
     typedef typename tabletype::value_type       value_type;
     typedef typename tabletype::difference_type  difference_type;
     typedef typename tabletype::size_type        size_type;
-    typedef table_element_adaptor<tabletype>     reference;
-    typedef table_element_adaptor<tabletype>*    pointer;
 
     explicit table_iterator(tabletype *tbl = 0, size_type p = 0) : 
         table(tbl), pos(p) 
     { }
-
-    // The main thing our iterator does is dereference.  If the table entry
-    // we point to is empty, we return the default value type.
-    // This is the big different function from the const iterator.
-    reference operator*()            
-    {
-        return table_element_adaptor<tabletype>(table, pos);
-    }
-
-    pointer operator->()  { return &(operator*()); }
 
     // Helper function to assert things are ok; eg pos is still in range
     void check() const 
@@ -1844,11 +1804,6 @@ public:
     {      // for "x = it2 - it"
         assert(table == it.table);
         return pos - it.pos;
-    }
-
-    reference operator[](difference_type n) const 
-    {
-        return *(*this + n);            // simple though not totally efficient
     }
 
     // Comparisons.
@@ -2318,7 +2273,6 @@ public:
     typedef value_type*                                    pointer;
     typedef const value_type*                              const_pointer;
 
-    typedef table_element_adaptor<sparsegroup<T, Alloc> >  element_adaptor;
     typedef uint8_t                                        size_type;        // max # of buckets
 
     // These are our special iterators, that go over non-empty buckets in a
@@ -2343,16 +2297,6 @@ public:
     reverse_ne_iterator       ne_rend()          { return reverse_ne_iterator(ne_begin()); }
     const_reverse_ne_iterator ne_rend() const    { return const_reverse_ne_iterator(ne_cbegin());  }
     const_reverse_ne_iterator ne_crend() const   { return const_reverse_ne_iterator(ne_cbegin());  }
-
-
-    // This gives us the "default" value to return for an empty bucket.
-    // We just use the default constructor on T, the template type
-    // ----------------------------------------------------------------
-    const_reference default_value() const 
-    {
-        static value_type defaultval = value_type();
-        return defaultval;
-    }
 
 private:
     // T can be std::pair<K, V>, but we need to return std::pair<const K, V>
@@ -2578,16 +2522,6 @@ public:
     // We also may want to know how many *used* buckets there are
     size_type num_nonempty() const   { return (size_type)_num_items(); }
 
-    // get()/set() are explicitly const/non-const.  You can use [] if
-    // you want something that can be either (potentially more expensive).
-    const_reference get(size_type i) const 
-    {
-        if (_bmtest(i))           // bucket i is occupied
-            return (const_reference)_group[pos_to_offset(i)];
-        else
-            return default_value();  // return the default reference
-    }
-
     // TODO(csilvers): make protected + friend
     // This is used by sparse_hashtable to get an element from the table
     // when we know it exists.
@@ -2599,35 +2533,6 @@ public:
 
     typedef std::pair<mutable_pointer, bool> SetResult;
 
-    // returns a reference which can be assigned, so we have to create an entry if not 
-    // already there
-    // -------------------------------------------------------------------------------
-    reference mutating_get(Alloc &alloc, size_type i) 
-    {
-        // fills bucket i before getting
-        if (!_bmtest(i))
-        {
-            SetResult sr = set(alloc, i, false);
-            if (!sr.second)
-                ::new (sr.first) mutable_value_type();
-            return *((pointer)sr.first);
-        }
-
-        return _group[pos_to_offset(i)];
-    }
-
-    // Syntactic sugar.  It's easy to return a const reference.  To
-    // return a non-const reference, we need to use the assigner adaptor.
-    const_reference operator[](size_type i) const 
-    {
-        return get(i);
-    }
-
-    element_adaptor operator[](size_type i)
-    {
-        return element_adaptor(this, i);
-    }
-
 private:
     typedef spp_::integral_constant<bool,
                                     (spp_::is_relocatable<value_type>::value &&
@@ -2635,11 +2540,45 @@ private:
                                                    spp_::libc_allocator_with_realloc<mutable_value_type> >::value)>
             realloc_and_memmove_ok; 
 
+    // ------------------------- memory at *p is uninitialized => need to construct
+    void _init_val(mutable_value_type *p, reference val)
+    {
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+        ::new (p) mutable_value_type(std::move(val));
+#else
+        ::new (p) mutable_value_type(val);
+#endif
+    }
+
+    // ------------------------- memory at *p is uninitialized => need to construct
+    void _init_val(mutable_value_type *p, const_reference val)
+    {
+        ::new (p) mutable_value_type(val);
+    }
+
+    // ------------------------------------------------ memory at *p is initialized
+    void _set_val(mutable_value_type *p, reference val)
+    {
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+        *p = std::move(val);
+#else
+        using std::swap;
+        swap(*p, spp_mutable_ref(val)); 
+#endif
+    }
+
+    // ------------------------------------------------ memory at *p is initialized
+    void _set_val(mutable_value_type *p, const_reference val)
+    {
+        *p = spp_const_mutable_ref(val);
+    }
+
     // Our default allocator - try to merge memory buffers
     // right now it uses Google's traits, but we should use something like folly::IsRelocatable
     // return true if the slot was constructed (i.e. contains a valid mutable_value_type
     // ---------------------------------------------------------------------------------
-    bool _set_aux(Alloc &alloc, size_type offset, spp_::true_type) 
+    template <class Val>
+    void _set_aux(Alloc &alloc, size_type offset, Val &val, spp_::true_type) 
     {
         //static int x=0;  if (++x < 10) printf("x\n"); // check we are getting here
         
@@ -2655,14 +2594,16 @@ private:
 
         for (uint32_t i = num_items; i > offset; --i)
             memcpy(_group + i, _group + i-1, sizeof(*_group));
-        return false;
+
+        _init_val(_group + offset, val);
     }
 
     // Create space at _group[offset], without special assumptions about value_type
     // and allocator_type, with a default value
     // return true if the slot was constructed (i.e. contains a valid mutable_value_type
     // ---------------------------------------------------------------------------------
-    bool _set_aux(Alloc &alloc, size_type offset, spp_::false_type) 
+    template <class Val>
+    void _set_aux(Alloc &alloc, size_type offset, Val &val, spp_::false_type) 
     {
         uint32_t  num_items = _num_items();
         uint32_t  num_alloc = _sizing(num_items);
@@ -2671,9 +2612,9 @@ private:
         if (num_items < num_alloc)
         {
             // create new object at end and rotate it to position
-            ::new (&_group[num_items]) mutable_value_type();
+            _init_val(&_group[num_items], val);
             std::rotate(_group + offset, _group + num_items, _group + num_items + 1);
-            return true;
+            return;
         }
 
         // This is valid because 0 <= offset <= num_items
@@ -2686,57 +2627,37 @@ private:
             std::uninitialized_copy(MK_MOVE_IT(_group + offset),
                                     MK_MOVE_IT(_group + num_items),
                                     p + offset + 1);
+        _init_val(p + offset, val);
         _free_group(alloc, num_alloc);
         _group = p;
-        return false;
+    }
+
+    // ----------------------------------------------------------------------------------
+    template <class Val>
+    void _set(Alloc &alloc, size_type i, size_type offset, Val &val)
+    {
+        if (!_bmtest(i)) 
+        {
+            _set_aux(alloc, offset, val, realloc_and_memmove_ok());
+            _incr_num_items();
+            _bmset(i);
+        }
+        else
+            _set_val(&_group[offset], val);
     }
 
 public:
 
-    // TODO(austern): Make this exception safe: handle exceptions from
-    // value_type's copy constructor.
-    // return true if the slot was constructed (i.e. contains a valid mutable_value_type)
-    // ----------------------------------------------------------------------------------
-    bool _set(Alloc &alloc, size_type i, size_type offset, bool erased)
+    // This returns the pointer to the inserted item
+    // ---------------------------------------------
+    template <class Val>
+    pointer set(Alloc &alloc, size_type i, Val &val)
     {
-        if (erased)
-        {
-            // assert(_bme_test(i));
-            _bme_clear(i);
-        }
+        _bme_clear(i); // in case this was an "erased" location
 
-        if (!_bmtest(i)) 
-        {
-            bool res = _set_aux(alloc, offset, realloc_and_memmove_ok());
-            _incr_num_items();
-            _bmset(i);
-            return res;
-        }
-        return true;
-    }
-
-    // This returns a pair (first is a pointer to the item's location, second is whether
-    // that location is constructed (i.e. contains a valid mutable_value_type)
-    // ---------------------------------------------------------------------------------
-    SetResult set(Alloc &alloc, size_type i, bool erased)
-    {
         size_type offset = pos_to_offset(i);  
-        bool constructed =  _set(alloc, i, offset, erased); // may change _group pointer
-        return std::make_pair(_group + offset, constructed);
-    }
-
-    // used in _move_from (where we can move the old value instead of copying it
-    // -------------------------------------------------------------------------
-    void move(Alloc &alloc, size_type i, reference val)
-    {
-        // assert(!_bmtest(i));
-
-        size_type offset = pos_to_offset(i); 
-        if (!_set(alloc, i, offset, false))
-            ::new (&_group[offset]) mutable_value_type();
-
-        using std::swap;
-        swap(_group[offset], spp_mutable_ref(val)); // called from _move_from, OK to swap
+        _set(alloc, i, offset, val);            // may change _group pointer
+        return (pointer)(_group + offset);
     }
     
     // We let you see if a bucket is non-empty without retrieving it
@@ -3086,7 +3007,6 @@ public:
 
     typedef table_iterator<sparsetable<T, Alloc> >        iterator;       // defined with index
     typedef const_table_iterator<sparsetable<T, Alloc> >  const_iterator; // defined with index
-    typedef table_element_adaptor<sparsetable<T, Alloc> > element_adaptor;
     typedef std::reverse_iterator<const_iterator>         const_reverse_iterator;
     typedef std::reverse_iterator<iterator>               reverse_iterator;
 
@@ -3450,14 +3370,6 @@ public:
         return which_group(pos.pos).test(pos_in_group(pos.pos));
     }
 
-    // We only return const_references because it's really hard to
-    // return something settable for empty buckets.  Use set() instead.
-    const_reference get(size_type i) const 
-    {
-        assert(i < _table_size);
-        return which_group(i).get(pos_in_group(i));
-    }
-
     // TODO(csilvers): make protected + friend
     // This is used by sparse_hashtable to get an element from the table
     // when we know it exists (because the caller has called test(i)).
@@ -3467,30 +3379,6 @@ public:
         assert(i < _table_size);
         // assert(test(i));
         return which_group(i).unsafe_get(pos_in_group(i));
-    }
-
-    // TODO(csilvers): make protected + friend element_adaptor
-    reference mutating_get(size_type i) 
-    {   
-        // fills bucket i before getting
-        assert(i < _table_size);
-
-        GroupsReference grp(which_group(i));
-        typename group_type::size_type old_numbuckets = grp.num_nonempty();
-        reference retval = grp.mutating_get(_alloc, pos_in_group(i));
-        _num_buckets += grp.num_nonempty() - old_numbuckets;
-        return retval;
-    }
-
-    // Syntactic sugar.  As in sparsegroup, the non-const version is harder
-    const_reference operator[](size_type i) const 
-    {
-        return get(i);
-    }
-
-    element_adaptor operator[](size_type i) 
-    {
-        return element_adaptor(this, i);
     }
 
     // Needed for hashtables, gets as a ne_iterator.  Crashes for empty bcks
@@ -3536,49 +3424,24 @@ public:
                 _first_group[current_row].offset_to_pos(current_col));
     }
 
-#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-    // This returns a reference to the inserted item (which is a copy of val)
-    // The trick is to figure out whether we're replacing or inserting anew
-    // This takes a reference, not a const reference, for when we insert objects
-    // that are movable but not copyable.
-    // ----------------------------------------------------------------------
-    reference set(size_type i, reference val, bool erased = false) 
+    // Val can be reference or const_reference
+    // ---------------------------------------
+    template <class Val>
+    reference set(size_type i, Val &val) 
     {
         assert(i < _table_size);
         group_type &group = which_group(i);
         typename group_type::size_type old_numbuckets = group.num_nonempty();
-        typename group_type::SetResult sr(group.set(_alloc, pos_in_group(i), erased));
-        if (!sr.second)
-            ::new (sr.first) mutable_value_type(std::move(val));
-        else
-            *sr.first = std::move(val);
+        pointer p(group.set(_alloc, pos_in_group(i), val));
         _num_buckets += group.num_nonempty() - old_numbuckets;
-        return *((pointer)sr.first);
-    }
-#endif
-
-    // This returns a reference to the inserted item (which is a copy of val)
-    // The trick is to figure out whether we're replacing or inserting anew
-    // ----------------------------------------------------------------------
-    reference set(size_type i, const_reference val, bool erased = false) 
-    {
-        assert(i < _table_size);
-        group_type &group = which_group(i);
-        typename group_type::size_type old_numbuckets = group.num_nonempty();
-        typename group_type::SetResult sr(group.set(_alloc, pos_in_group(i), erased));
-        if (!sr.second)
-            ::new (sr.first) mutable_value_type(val);
-        else
-            *sr.first = spp_const_mutable_ref(val);
-        _num_buckets += group.num_nonempty() - old_numbuckets;
-        return *((pointer)sr.first);
+        return *p;
     }
 
     // used in _move_from (where we can move the old value instead of copying it
     void move(size_type i, reference val) 
     {
         assert(i < _table_size);
-        which_group(i).move(_alloc, pos_in_group(i), val);
+        which_group(i).set(_alloc, pos_in_group(i), val);
         ++_num_buckets;
     }
 
@@ -4134,7 +3997,7 @@ private:
                 assert(num_probes < bucket_count()
                        && "Hashtable is full: an error in key_equal<> or hash<>");
             }
-            table.set(bucknum, *it, false);               // copies the value to here
+            table.set(bucknum, *it);               // copies the value to here
         }
         settings.inc_num_ht_copies();
     }
@@ -4528,7 +4391,7 @@ private:
             assert(num_deleted);
             --num_deleted;
         }
-        return table.set(pos, obj, erased);
+        return table.set(pos, obj);
     }
 
     // If you know *this is big enough to hold obj, use this routine

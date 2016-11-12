@@ -1141,7 +1141,7 @@ struct Identity
 // This is just to avoid memory leaks -- it's a global pointer to
 // all the memory allocated by UniqueObjectHelper.  We'll use it
 // to semi-test sparsetable as well. :-)
-sparsetable<char*> g_unique_charstar_objects(16);
+std::vector<char*> g_unique_charstar_objects(16, 0);
 
 // This is an object-generator: pass in an index, and it will return a
 // unique object of type ItemType.  We provide specializations for the
@@ -1160,20 +1160,20 @@ template<> string UniqueObjectHelper(int index)
 template<> char* UniqueObjectHelper(int index) 
 {
     // First grow the table if need be.
-    sparsetable<char*>::size_type table_size = g_unique_charstar_objects.size();
+    size_t table_size = g_unique_charstar_objects.size();
     while (index >= static_cast<int>(table_size)) {
         assert(table_size * 2 > table_size);  // avoid overflow problems
         table_size *= 2;
     }
     if (table_size > g_unique_charstar_objects.size())
-        g_unique_charstar_objects.resize(table_size);
-
-    if (!g_unique_charstar_objects.test((size_t)index)) {
+        g_unique_charstar_objects.resize(table_size, 0);
+    
+    if (!g_unique_charstar_objects[index]) {
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "%d", index);
         g_unique_charstar_objects[(size_t)index] = _strdup(buffer);
     }
-    return g_unique_charstar_objects.get((size_t)index);
+    return g_unique_charstar_objects[index];
 }
 template<> const char* UniqueObjectHelper(int index) {
     return UniqueObjectHelper<char*>(index);
@@ -1528,18 +1528,27 @@ TEST(HashtableTest, Emplace)
 #if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
 TEST(HashtableTest, IncompleteTypes) 
 {
-    {
-        int i;
-        sparse_hash_map<int *, int> ht2;
-        ht2[&i] = 3;
+    int i;
+    sparse_hash_map<int *, int> ht2;
+    ht2[&i] = 3;
 
-        struct Bogus;
-        sparse_hash_map<Bogus *, int> ht3;
-        ht3[(Bogus *)0] = 8;
-
-    }
+    struct Bogus;
+    sparse_hash_map<Bogus *, int> ht3;
+    ht3[(Bogus *)0] = 8;
 }
 #endif
+
+
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+TEST(HashtableTest, ReferenceWrapper) 
+{
+    sparse_hash_map<int, std::reference_wrapper<int>> x;
+    int a = 5;
+    x.insert(std::make_pair(3, std::ref(a)));
+    EXPECT_EQ(x.at(3), 5);
+}
+#endif
+
 
 TEST(HashtableTest, ModifyViaIterator) 
 {
