@@ -1141,7 +1141,7 @@ struct Identity
 // This is just to avoid memory leaks -- it's a global pointer to
 // all the memory allocated by UniqueObjectHelper.  We'll use it
 // to semi-test sparsetable as well. :-)
-std::vector<char*> g_unique_charstar_objects(16, 0);
+std::vector<char*> g_unique_charstar_objects(16, (char *)0);
 
 // This is an object-generator: pass in an index, and it will return a
 // unique object of type ItemType.  We provide specializations for the
@@ -1166,7 +1166,7 @@ template<> char* UniqueObjectHelper(int index)
         table_size *= 2;
     }
     if (table_size > g_unique_charstar_objects.size())
-        g_unique_charstar_objects.resize(table_size, 0);
+        g_unique_charstar_objects.resize(table_size, (char *)0);
     
     if (!g_unique_charstar_objects[index]) {
         char buffer[64];
@@ -1491,7 +1491,7 @@ public:
     MovableOnlyType() : _str("whatever"), _int(2) {}
 };
 
-void movable_emplace_test(std::size_t iterations, std::size_t container_size) 
+void movable_emplace_test(std::size_t iterations, int container_size) 
 {
     for (std::size_t i=0;i<iterations;++i) 
     {
