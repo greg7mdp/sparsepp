@@ -54,6 +54,12 @@ Since the full Sparsepp implementation is contained in a single header file `spa
 
 Optionally, a second header file `spp_utils.h` is provided, which implements only the spp::hash_combine() functionality. This is useful when we want to specify a hash function for a user-defined class in an header file, without including the full `sparsepp.h` header (this is demonstrated in [example 2](#example-2---providing-a-hash-function-for-a-user-defined-class) below).
 
+## Warning - iterator invalidation on erase/insert
+
+1. erasing elements is likely to invalidate iterators (for example when calling `erase()`)
+
+2. inserting new elements is likely to invalidate iterators (iterator invalidation can also happen with std::unordered_map if rehashing occurs due to the insertion)
+
 ## Usage
 
 As shown in the example above, you need to include the header file: `#include <sparsepp.h>`
@@ -80,7 +86,7 @@ namespace spp
 
 These classes provide the same interface as std::unordered_map and std::unordered_set, with the following differences:
 
-- Calls to erase() may invalidate iterators. However, conformant to the C++11 standard, the position and range erase functions return an iterator pointing to the position immediately following the last of the elements erased. This makes it easy to traverse a sparse hash table and delete elements matching a condition. For example to delete odd values:
+- Calls to `erase()` may invalidate iterators. However, conformant to the C++11 standard, the position and range erase functions return an iterator pointing to the position immediately following the last of the elements erased. This makes it easy to traverse a sparse hash table and delete elements matching a condition. For example to delete odd values:
 
 ```c++
         for (auto it = c.begin(); it != c.end(); )
@@ -89,6 +95,8 @@ These classes provide the same interface as std::unordered_map and std::unordere
         else
             ++it;
 ```
+
+As for std::unordered_map, the order of the elements that are not erased is preserved.
 
 - Since items are not grouped into buckets, Bucket APIs have been adapted: `max_bucket_count` is equivalent to `max_size`, and `bucket_count` returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.
 
