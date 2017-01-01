@@ -104,7 +104,7 @@ As for std::unordered_map, the order of the elements that are not erased is pres
 
 In some cases, sparsepp, as well as some compiler implementations for std::hash (g++ 4.8 for example) use trivial hash mappings for integral types, just casting the passed parameter to size_t. 
 
-This can cause performance issues for integer keys, if the keys are not randomly distributed (for example if many of them are multiples of some value like 8).
+This can cause performance issues for integer keys, if the keys are not randomly distributed (for example if many of them are multiples of some specific value like 8).
 
 In this case, it is recommended to provide your own hash function, as shown below:
 
