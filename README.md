@@ -100,6 +100,33 @@ As for std::unordered_map, the order of the elements that are not erased is pres
 
 - Since items are not grouped into buckets, Bucket APIs have been adapted: `max_bucket_count` is equivalent to `max_size`, and `bucket_count` returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.
 
+## Integer keys, and other hash function considerations.
+
+In some cases, sparsepp, as well as some compiler implementations for std::hash (g++ 4.8 for example) ise trivial hash mappings for integral types, just casting the passed parameter to size_t. 
+
+This can cause performance issues for integer keys, if the keys are not randomly distributed (for example if many of them are multiples of some value like 8).
+
+In this case, it is recommended to provide your own hash function, as shown below:
+
+```
+#include <sparsepp.h>
+
+struct Hasher64 {
+    size_t operator()(uint64_t k) const { return (k ^ 14695981039346656037ULL) * 1099511628211ULL; }
+};
+
+struct Hasher32 {
+    size_t operator()(uint32_t k) const { return (k ^ 2166136261U)  * 16777619UL; }
+};
+
+int main() 
+{
+    spp::sparse_hash_map<uint64_t, double, Hasher64> map;
+    ...
+}
+
+```
+
 ## Example 2 - providing a hash function for a user-defined class
 
 In order to use a sparse_hash_set or sparse_hash_map, a hash function should be provided. Even though a the hash function can be provided via the HashFcn template parameter, we recommend injecting a specialization of `std::hash` for the class into the "std" namespace. For example:
