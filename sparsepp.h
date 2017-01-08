@@ -966,70 +966,104 @@ struct spp_hash<T *>
     }
 };
 
+// from http://burtleburtle.net/bob/hash/integer.html
+// fast and efficient for power of two table sizes where we always 
+// consider the last bits.
+// ---------------------------------------------------------------
+inline size_t spp_mix_32(uint32_t a)
+{
+    a = a ^ (a >> 4);
+    a = (a ^ 0xdeadbeef) + (a << 5);
+    a = a ^ (a >> 11);
+    return static_cast<size_t>(a);
+}
+
+// Maybe we should do a more thorough scrambling as described in 
+// https://gist.github.com/badboy/6267743
+// -------------------------------------------------------------
+inline size_t spp_mix_64(uint64_t a)
+{
+    a = a ^ (a >> 4);
+    a = (a ^ 0xdeadbeef) + (a << 5);
+    a = a ^ (a >> 11);
+    return a;
+}
+
 template <>
 struct spp_hash<bool> : public std::unary_function<bool, size_t>
 {
-    SPP_INLINE size_t operator()(bool __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(bool __v) const SPP_NOEXCEPT 
+    { return static_cast<size_t>(__v); }
 };
 
 template <>
 struct spp_hash<char> : public std::unary_function<char, size_t>
 {
-    SPP_INLINE size_t operator()(char __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(char __v) const SPP_NOEXCEPT 
+    { return static_cast<size_t>(__v); }
 };
 
 template <>
 struct spp_hash<signed char> : public std::unary_function<signed char, size_t>
 {
-    SPP_INLINE size_t operator()(signed char __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(signed char __v) const SPP_NOEXCEPT 
+    { return static_cast<size_t>(__v); }
 };
 
 template <>
 struct spp_hash<unsigned char> : public std::unary_function<unsigned char, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned char __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(unsigned char __v) const SPP_NOEXCEPT 
+    { return static_cast<size_t>(__v); }
 };
 
 template <>
 struct spp_hash<wchar_t> : public std::unary_function<wchar_t, size_t>
 {
-    SPP_INLINE size_t operator()(wchar_t __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(wchar_t __v) const SPP_NOEXCEPT 
+    { return static_cast<size_t>(__v); }
 };
 
 template <>
-struct spp_hash<short> : public std::unary_function<short, size_t>
+struct spp_hash<int16_t> : public std::unary_function<int16_t, size_t>
 {
-    SPP_INLINE size_t operator()(short __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(int16_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_32(static_cast<uint32_t>(__v)); }
 };
 
 template <> 
-struct spp_hash<unsigned short> : public std::unary_function<unsigned short, size_t>
+struct spp_hash<uint16_t> : public std::unary_function<uint16_t, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned short __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(uint16_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_32(static_cast<uint32_t>(__v)); }
 };
 
 template <>
-struct spp_hash<int> : public std::unary_function<int, size_t>
+struct spp_hash<int32_t> : public std::unary_function<int32_t, size_t>
 {
-    SPP_INLINE size_t operator()(int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(int32_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_32(static_cast<uint32_t>(__v)); }
 };
 
 template <>
-struct spp_hash<unsigned int> : public std::unary_function<unsigned int, size_t>
+struct spp_hash<uint32_t> : public std::unary_function<uint32_t, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned int __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(uint32_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_32(static_cast<uint32_t>(__v)); }
 };
 
 template <>
-struct spp_hash<long> : public std::unary_function<long, size_t>
+struct spp_hash<int64_t> : public std::unary_function<int64_t, size_t>
 {
-    SPP_INLINE size_t operator()(long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(int64_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_64(static_cast<uint64_t>(__v)); }
 };
 
 template <>
-struct spp_hash<unsigned long> : public std::unary_function<unsigned long, size_t>
+struct spp_hash<uint64_t> : public std::unary_function<uint64_t, size_t>
 {
-    SPP_INLINE size_t operator()(unsigned long __v) const SPP_NOEXCEPT {return static_cast<size_t>(__v);}
+    SPP_INLINE size_t operator()(uint64_t __v) const SPP_NOEXCEPT 
+    { return spp_mix_64(static_cast<uint64_t>(__v)); }
 };
 
 template <>
@@ -1039,22 +1073,20 @@ struct spp_hash<float> : public std::unary_function<float, size_t>
     {
         // -0.0 and 0.0 should return same hash
         uint32_t *as_int = reinterpret_cast<uint32_t *>(&__v);
-        return (__v == 0) ? static_cast<size_t>(0) : static_cast<size_t>(*as_int);
+        return (__v == 0) ? static_cast<size_t>(0) : spp_mix_32(*as_int);
     }
 };
 
-#if 0
-// todo: we should not ignore half of the double => see libcxx/include/functional
 template <>
 struct spp_hash<double> : public std::unary_function<double, size_t>
 {
     SPP_INLINE size_t operator()(double __v) const SPP_NOEXCEPT
     {
         // -0.0 and 0.0 should return same hash
-        return (__v == 0) ? (size_t)0 : (size_t)*((uint64_t *)&__v);
+        uint64_t *as_int = reinterpret_cast<uint64_t *>(&__v);
+        return (__v == 0) ? static_cast<size_t>(0) : spp_mix_64(*as_int);
     }
 };
-#endif
 
 template <class T, int sz> struct Combiner
 {
@@ -1421,12 +1453,11 @@ namespace sparsehash_internal
     // It does some munging of the hash value for the cases where 
     // the original hash function is not be very good.
     // ---------------------------------------------------------------
-    template<typename Key, typename HashFunc,
-             typename SizeType, int HT_MIN_BUCKETS>
+    template<typename Key, typename HashFunc, typename SizeType, int HT_MIN_BUCKETS>
     class sh_hashtable_settings : public HashFunc 
     {
     private:
-#ifdef SPP_NO_MIX
+#ifndef SPP_MIX_HASH
         template <class T, int sz> struct Mixer
         {
             inline T operator()(T h) const { return h; }
@@ -1437,12 +1468,18 @@ namespace sparsehash_internal
             inline T operator()(T h) const;
         };
 
-        template <class T> struct Mixer<T, 4>
+         template <class T> struct Mixer<T, 4>
         {
             inline T operator()(T h) const
             {
-                h ^= (h >> 17);
-                return h ^ (h >> 7);
+                // from Thomas Wang - https://gist.github.com/badboy/6267743
+                // ---------------------------------------------------------
+                h = (h ^ 61) ^ (h >> 16);
+                h = h + (h << 3);
+                h = h ^ (h >> 4);
+                h = h * 0x27d4eb2d;
+                h = h ^ (h >> 15);
+                return h;
             }
         };
 
@@ -1450,11 +1487,16 @@ namespace sparsehash_internal
         {
             inline T operator()(T h) const
             {
-                // murmurhash good, but significantly slows dow all functions by *2 or more
-                // -> just make sure all the bits of the hash affect our modulo operation.
-                h ^= (h >> 33);
-                h ^= (h >> 17);
-                return h ^ (h >> 7);
+                // from Thomas Wang - https://gist.github.com/badboy/6267743
+                // ---------------------------------------------------------
+                h = (~h) + (h << 21);              // h = (h << 21) - h - 1;
+                h = h ^ (h >> 24);
+                h = (h + (h << 3)) + (h << 8);     // h * 265
+                h = h ^ (h >> 14);
+                h = (h + (h << 2)) + (h << 4);     // h * 21
+                h = h ^ (h >> 28);
+                h = h + (h << 31);
+                return h;
             }
         };
 #endif
@@ -3712,7 +3754,7 @@ private:
 public:
     typedef Key                                        key_type;
     typedef typename spp::cvt<Value>::type             value_type;
-    typedef HashFcn                                    hasher;
+    typedef HashFcn                                    hasher; // user provided or spp_hash<Key>
     typedef EqualKey                                   key_equal;
     typedef Alloc                                      allocator_type;
 

@@ -102,30 +102,30 @@ As for std::unordered_map, the order of the elements that are not erased is pres
 
 ## Integer keys, and other hash function considerations.
 
-In some cases, sparsepp, as well as some compiler implementations for std::hash (g++ 4.8 for example) use trivial hash mappings for integral types, just casting the passed parameter to size_t. 
+1. For basic integer types, sparsepp provides a default hash function which does some mixing of the bits of the keys (see [Integer Hashing](http://burtleburtle.net/bob/hash/integer.html). This prevents a pathological case where inserted keys are perfectly sequential (1, 2, 3, 4, ...), and the lookup on non-present keys becomes very slow. 
 
-This can cause performance issues for integer keys, if the keys are not randomly distributed (for example if many of them are multiples of some specific value like 8).
-
-In this case, it is recommended to provide your own hash function, as shown below:
+Of course, the user of sparsepp may provide its own hash function,  as shown below:
 
 ```
 #include <sparsepp.h>
 
-struct Hasher64 {
+struct Hash64 {
     size_t operator()(uint64_t k) const { return (k ^ 14695981039346656037ULL) * 1099511628211ULL; }
 };
 
-struct Hasher32 {
+struct Hash32 {
     size_t operator()(uint32_t k) const { return (k ^ 2166136261U)  * 16777619UL; }
 };
 
 int main() 
 {
-    spp::sparse_hash_map<uint64_t, double, Hasher64> map;
+    spp::sparse_hash_map<uint64_t, double, Hash64> map;
     ...
 }
 
 ```
+
+2. When the user provides its own hash function, for example when inserting custom classes into a hash map, sometimes the resulting hash keys have similar low order bits and cause many collisions, decreasing the efficiency of the hash map. To address this use case, sparsepp provides an additional 'mixing' of the hash key (see [Integer Hash Function](https://gist.github.com/badboy/6267743) which can be enabled by defining the proprocessor macro: SPP_HASH_MIX. 
 
 ## Example 2 - providing a hash function for a user-defined class
 

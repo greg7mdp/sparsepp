@@ -1168,12 +1168,12 @@ template<> char* UniqueObjectHelper(int index)
     if (table_size > g_unique_charstar_objects.size())
         g_unique_charstar_objects.resize(table_size, (char *)0);
     
-    if (!g_unique_charstar_objects[index]) {
+    if (!g_unique_charstar_objects[static_cast<size_t>(index)]) {
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "%d", index);
-        g_unique_charstar_objects[(size_t)index] = _strdup(buffer);
+        g_unique_charstar_objects[static_cast<size_t>(index)] = _strdup(buffer);
     }
-    return g_unique_charstar_objects[index];
+    return g_unique_charstar_objects[static_cast<size_t>(index)];
 }
 template<> const char* UniqueObjectHelper(int index) {
     return UniqueObjectHelper<char*>(index);
@@ -1487,7 +1487,9 @@ class MovableOnlyType
 public:
     // Make object movable and non-copyable
     MovableOnlyType(MovableOnlyType &&) = default;
+    MovableOnlyType(const MovableOnlyType &) = delete;
     MovableOnlyType& operator=(MovableOnlyType &&) = default;
+    MovableOnlyType& operator=(const MovableOnlyType &) = delete;
     MovableOnlyType() : _str("whatever"), _int(2) {}
 };
 
@@ -1496,7 +1498,7 @@ void movable_emplace_test(std::size_t iterations, int container_size)
     for (std::size_t i=0;i<iterations;++i) 
     {
         spp::sparse_hash_map<std::string,MovableOnlyType> m;
-        m.reserve(container_size);
+        m.reserve(static_cast<size_t>(container_size));
         char buff[20];
         for (int j=0; j<container_size; ++j) 
         {
