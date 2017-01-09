@@ -89,15 +89,15 @@ These classes provide the same interface as std::unordered_map and std::unordere
 - Calls to `erase()` may invalidate iterators. However, conformant to the C++11 standard, the position and range erase functions return an iterator pointing to the position immediately following the last of the elements erased. This makes it easy to traverse a sparse hash table and delete elements matching a condition. For example to delete odd values:
    
    ```c++
-           for (auto it = c.begin(); it != c.end(); )
-           if (it->first % 2 == 1)
-               it = c.erase(it);
-           else
-               ++it;
+   for (auto it = c.begin(); it != c.end(); )
+       if (it->first % 2 == 1)
+          it = c.erase(it);
+       else
+          ++it;
    ```
    
    As for std::unordered_map, the order of the elements that are not erased is preserved.
-   
+
 - Since items are not grouped into buckets, Bucket APIs have been adapted: `max_bucket_count` is equivalent to `max_size`, and `bucket_count` returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.
 
 ## Integer keys, and other hash function considerations.
@@ -106,7 +106,7 @@ These classes provide the same interface as std::unordered_map and std::unordere
 
    Of course, the user of sparsepp may provide its own hash function,  as shown below:
    
-   ```
+   ```c++
    #include <sparsepp.h>
    
    struct Hash64 {
