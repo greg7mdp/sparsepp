@@ -83,6 +83,13 @@
     #if (_MSC_FULL_VER < 190021730)
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
+#elif defined __clang__
+    #include <functional>
+    #define SPP_HASH_CLASS  std::hash
+
+    #if !__has_feature(cxx_noexcept)
+        #define SPP_NO_CXX11_NOEXCEPT
+    #endif
 #elif defined(__GNUC__)
     #if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
         #include <functional>
@@ -94,13 +101,6 @@
     #else
         #include <tr1/unordered_map>
         #define SPP_HASH_CLASS std::tr1::hash
-        #define SPP_NO_CXX11_NOEXCEPT
-    #endif
-#elif defined __clang__
-    #include <functional>
-    #define SPP_HASH_CLASS  std::hash
-
-    #if !__has_feature(cxx_noexcept)
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
 #else
@@ -156,7 +156,8 @@ struct spp_hash<T *>
     SPP_INLINE size_t operator()(const T *__v) const SPP_NOEXCEPT 
     {
         static const size_t shift = 3; // spp_log2(1 + sizeof(T)); // T might be incomplete!
-        return static_cast<size_t>((*(reinterpret_cast<const uintptr_t *>(&__v))) >> shift);
+        const uintptr_t i = (const uintptr_t)__v;
+        return static_cast<size_t>(i >> shift);
     }
 };
 

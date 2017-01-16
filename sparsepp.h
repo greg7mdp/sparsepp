@@ -889,6 +889,13 @@ template<int S, int H> class HashObject; // for Google's benchmark, not in spp n
     #if (_MSC_FULL_VER < 190021730)
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
+#elif defined __clang__
+    #include <functional>
+    #define SPP_HASH_CLASS  std::hash
+
+    #if !__has_feature(cxx_noexcept)
+        #define SPP_NO_CXX11_NOEXCEPT
+    #endif
 #elif defined(__GNUC__)
     #if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
         #include <functional>
@@ -900,13 +907,6 @@ template<int S, int H> class HashObject; // for Google's benchmark, not in spp n
     #else
         #include <tr1/unordered_map>
         #define SPP_HASH_CLASS std::tr1::hash
-        #define SPP_NO_CXX11_NOEXCEPT
-    #endif
-#elif defined __clang__
-    #include <functional>
-    #define SPP_HASH_CLASS  std::hash
-
-    #if !__has_feature(cxx_noexcept)
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
 #else
