@@ -1562,6 +1562,8 @@ namespace sparsehash_internal
         // ------------------------------------------------------------
         void set_resizing_parameters(float shrink, float grow) 
         {
+            assert(shrink >= 0);
+            assert(grow <= 1);
             if (shrink > grow/2.0f)
                 shrink = grow / 2.0f;     // otherwise we thrash hashtable size
             set_shrink_factor(shrink);
