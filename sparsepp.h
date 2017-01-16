@@ -890,8 +890,13 @@ template<int S, int H> class HashObject; // for Google's benchmark, not in spp n
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
 #elif defined __clang__
-    #include <functional>
-    #define SPP_HASH_CLASS  std::hash
+    #if __has_feature(cxx_noexcept)  // what to use here?
+       #include <functional>
+       #define SPP_HASH_CLASS  std::hash
+    #else
+       #include <tr1/unordered_map>
+       #define SPP_HASH_CLASS std::tr1::hash
+    #endif
 
     #if !__has_feature(cxx_noexcept)
         #define SPP_NO_CXX11_NOEXCEPT
@@ -4476,6 +4481,16 @@ public:
         return _insert_noresize(obj);
     }
 
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+    template< class P > 
+    std::pair<iterator, bool> insert(P &&obj)
+    {
+        _resize_delta(1);                      // adding an object, grow if need be
+        value_type val(std::forward<value_type>(obj));
+        return _insert_noresize(val);
+    }
+#endif
+
     // When inserting a lot at a time, we specialize on the type of iterator
     template <class InputIterator>
     void insert(InputIterator f, InputIterator l) 
@@ -5080,6 +5095,11 @@ public:
     std::pair<iterator, bool> 
     insert(const value_type& obj)                    { return rep.insert(obj); }
 
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+    template< class P > 
+    std::pair<iterator, bool> insert(P&& obj)        { return rep.insert(std::forward<P>(obj)); }
+#endif
+
     template <class InputIterator> 
     void insert(InputIterator f, InputIterator l)    { rep.insert(f, l); }
 
@@ -5439,6 +5459,11 @@ public:
         std::pair<typename ht::iterator, bool> p = rep.insert(obj);
         return std::pair<iterator, bool>(p.first, p.second);   // const to non-const
     }
+
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
+    template<class P> 
+    std::pair<iterator, bool> insert(P&& obj)        { return rep.insert(std::forward<P>(obj)); }
+#endif
 
     template <class InputIterator>
     void insert(InputIterator f, InputIterator l)    { rep.insert(f, l); }

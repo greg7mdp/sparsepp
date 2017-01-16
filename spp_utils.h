@@ -84,8 +84,13 @@
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
 #elif defined __clang__
-    #include <functional>
-    #define SPP_HASH_CLASS  std::hash
+    #if __has_feature(cxx_noexcept)  // what to use here?
+       #include <functional>
+       #define SPP_HASH_CLASS  std::hash
+    #else
+       #include <tr1/unordered_map>
+       #define SPP_HASH_CLASS std::tr1::hash
+    #endif
 
     #if !__has_feature(cxx_noexcept)
         #define SPP_NO_CXX11_NOEXCEPT
