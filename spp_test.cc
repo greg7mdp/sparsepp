@@ -357,7 +357,6 @@ public:
 
     void set_deleted_key(const key_type& k) { ht_.set_deleted_key(k); }
     void clear_deleted_key() { ht_.clear_deleted_key(); }
-    key_type deleted_key() const { return ht_.deleted_key(); }
 
     size_type erase(const key_type& key)   { return ht_.erase(key); }
     void erase(typename HT::iterator it)   { ht_.erase(it); }
@@ -1287,7 +1286,7 @@ namespace {
 
 #define INT_HASHTABLES                                                  \
   HashtableInterface_SparseHashMap<int, int, Hasher, Hasher,            \
-                                   Alloc<int> >,                        \
+                                   Alloc<std::pair<const int, int> > >,  \
   HashtableInterface_SparseHashSet<int, Hasher, Hasher,                 \
                                    Alloc<int> >,                        \
   /* This is a table where the key associated with a value is -value */ \
@@ -1297,7 +1296,7 @@ namespace {
 
 #define STRING_HASHTABLES                                               \
   HashtableInterface_SparseHashMap<string, string, Hasher, Hasher,      \
-                                   Alloc<string> >,                     \
+                                   Alloc<std::pair<const string, string> > >,                     \
   HashtableInterface_SparseHashSet<string, Hasher, Hasher,              \
                                    Alloc<string> >,                     \
   /* This is a table where the key associated with a value is Cap(value) */ \
@@ -1312,7 +1311,7 @@ namespace {
 // ---------------------------------------------------------------------
 #define CHARSTAR_HASHTABLES                                             \
   HashtableInterface_SparseHashMap<const char*, ValueType,              \
-                                   Hasher, Hasher, Alloc<const char*> >, \
+                                   Hasher, Hasher, Alloc<std::pair<const char* const, ValueType> > >, \
   HashtableInterface_SparseHashSet<const char*, Hasher, Hasher,         \
                                    Alloc<const char*> >,                \
   HashtableInterface_SparseHashtable<const char*, const char*,          \
@@ -1436,7 +1435,6 @@ TYPED_TEST(HashtableIntTest, Typedefs)
     // different, arbitrary function that returns the type.  Sometimes
     // the type isn't used at all, and there's no good way to use the
     // variable.
-    kt = this->ht_.deleted_key();
     (void)vt;   // value_type may not be copyable.  Easiest not to try.
     h = this->ht_.hash_funct();
     ke = this->ht_.key_eq();
@@ -1642,7 +1640,7 @@ TYPED_TEST(HashtableIntTest, Constructors)
     // placement-news we have to do below.
     Hasher hasher(1);   // 1 is a unique id
     int alloc_count = 0;
-    Alloc<typename TypeParam::key_type> alloc(2, &alloc_count);
+    Alloc<typename TypeParam::value_type> alloc(2, &alloc_count);
 
     TypeParam ht_noarg;
     TypeParam ht_onearg(100);
@@ -1793,9 +1791,6 @@ TYPED_TEST(HashtableAllTest, Swap)
 
     this->ht_.swap(other_ht);
 
-    EXPECT_EQ(this->UniqueKey(2), this->ht_.deleted_key());
-    EXPECT_EQ(this->UniqueKey(1), other_ht.deleted_key());
-
     EXPECT_EQ(1, this->ht_.hash_funct().id());
     EXPECT_EQ(0, other_ht.hash_funct().id());
 
@@ -1826,8 +1821,6 @@ TYPED_TEST(HashtableAllTest, Swap)
     std::swap(this->ht_, other_ht);
 #endif
 
-    EXPECT_EQ(this->UniqueKey(1), this->ht_.deleted_key());
-    EXPECT_EQ(this->UniqueKey(2), other_ht.deleted_key());
     EXPECT_EQ(0, this->ht_.hash_funct().id());
     EXPECT_EQ(1, other_ht.hash_funct().id());
     EXPECT_EQ(1996u, this->ht_.size());
@@ -2251,24 +2244,6 @@ TYPED_TEST(HashtableStringTest, EmptyKey)
     EXPECT_EQ(kEmptyString, this->ht_.empty_key());
 }
 
-TYPED_TEST(HashtableAllTest, DeletedKey) 
-{
-    if (!this->ht_.supports_deleted_key())
-        return;
-    this->ht_.insert(this->UniqueObject(10));
-    this->ht_.insert(this->UniqueObject(20));
-    this->ht_.set_deleted_key(this->UniqueKey(1));
-    EXPECT_EQ(this->ht_.deleted_key(), this->UniqueKey(1));
-    EXPECT_EQ(2u, this->ht_.size());
-    this->ht_.erase(this->UniqueKey(20));
-    EXPECT_EQ(1u, this->ht_.size());
-
-    // Changing the deleted key is fine.
-    this->ht_.set_deleted_key(this->UniqueKey(2));
-    EXPECT_EQ(this->ht_.deleted_key(), this->UniqueKey(2));
-    EXPECT_EQ(1u, this->ht_.size());
-}
-
 TYPED_TEST(HashtableAllTest, Erase) 
 {
     this->ht_.set_deleted_key(this->UniqueKey(1));
@@ -2329,7 +2304,7 @@ TYPED_TEST(HashtableAllTest, Equals)
 
     // The choice of allocator/etc doesn't matter either.
     Hasher hasher(1);
-    Alloc<typename TypeParam::key_type> alloc(2, NULL);
+    Alloc<typename TypeParam::value_type> alloc(2, NULL);
     TypeParam ht3(5, hasher, hasher, alloc);
     EXPECT_TRUE(ht1 == ht3);
     EXPECT_FALSE(ht1 != ht3);
@@ -2746,7 +2721,7 @@ TEST(HashtableTest, SimpleDataTypeOptimizations)
     // Only sparsehashtable optimizes moves in this way.
     sparse_hash_map<int, Memmove, Hasher, Hasher> memmove;
     sparse_hash_map<int, NoMemmove, Hasher, Hasher> nomemmove;
-    sparse_hash_map<int, Memmove, Hasher, Hasher, Alloc<int> >
+    sparse_hash_map<int, Memmove, Hasher, Hasher, Alloc<std::pair<const int, Memmove> > >
         memmove_nonstandard_alloc;
 
     Memmove::num_copies = 0;

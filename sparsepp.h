@@ -962,7 +962,8 @@ struct spp_hash<T *>
     SPP_INLINE size_t operator()(const T *__v) const SPP_NOEXCEPT 
     {
         static const size_t shift = 3; // spp_log2(1 + sizeof(T)); // T might be incomplete!
-        return static_cast<size_t>((*(reinterpret_cast<const uintptr_t *>(&__v))) >> shift);
+        const uintptr_t i = (const uintptr_t)__v;
+        return static_cast<size_t>(i >> shift);
     }
 };
 
@@ -1140,7 +1141,7 @@ inline void throw_exception(const E& exception)
 
 //  ----------------------------------------------------------------------
 //              M U T A B L E     P A I R      H A C K
-// turn mutable std::pair<K, V> into correct value_type std::pair<const K, V>
+// turn std::pair<const K, V> into mutable std::pair<K, V>
 //  ----------------------------------------------------------------------
 template <class T>
 struct cvt
@@ -1149,15 +1150,15 @@ struct cvt
 };
 
 template <class K, class V>
-struct cvt<std::pair<K, V> >
+struct cvt<std::pair<const K, V> >
 {
-    typedef std::pair<const K, V> type;
+    typedef std::pair<K, V> type;
 };
 
 template <class K, class V>
-struct cvt<const std::pair<K, V> >
+struct cvt<const std::pair<const K, V> >
 {
-    typedef const std::pair<const K, V> type;
+    typedef const std::pair<K, V> type;
 };
 
 //  ----------------------------------------------------------------------
@@ -1561,8 +1562,6 @@ namespace sparsehash_internal
         // ------------------------------------------------------------
         void set_resizing_parameters(float shrink, float grow) 
         {
-            assert(shrink >= 0.0f);
-            assert(grow <= 1.0f);
             if (shrink > grow/2.0f)
                 shrink = grow / 2.0f;     // otherwise we thrash hashtable size
             set_shrink_factor(shrink);
@@ -1992,12 +1991,7 @@ class Two_d_iterator : public std::iterator<iter_type, T>
 {
 public:
     typedef Two_d_iterator iterator;
-
-    // T can be std::pair<K, V>, but we need to return std::pair<const K, V>
-    // ---------------------------------------------------------------------
-    typedef typename spp_::cvt<T>::type value_type;
-    typedef value_type&                reference;
-    typedef value_type*                pointer;
+    typedef T              value_type;
 
     explicit Two_d_iterator(row_it curr) : row_current(curr), col_current(0)
     {
@@ -2028,8 +2022,8 @@ public:
     // The default destructor is fine; we don't define one
     // The default operator= is fine; we don't define one
 
-    reference operator*() const    { return *(col_current); }
-    pointer operator->() const     { return &(operator*()); }
+    value_type& operator*() const  { return *(col_current); }
+    value_type* operator->() const { return &(operator*()); }
 
     // Arithmetic: we just do arithmetic on pos.  We don't even need to
     // do bounds checking, since STL doesn't consider that its job.  :-)
@@ -2308,7 +2302,7 @@ class sparsegroup
 {
 public:
     // Basic types
-    typedef typename spp::cvt<T>::type                     value_type;
+    typedef T                                              value_type;
     typedef Alloc                                          allocator_type;
     typedef value_type&                                    reference;
     typedef const value_type&                              const_reference;
@@ -2341,18 +2335,11 @@ public:
     const_reverse_ne_iterator ne_crend() const   { return const_reverse_ne_iterator(ne_cbegin());  }
 
 private:
-    // T can be std::pair<K, V>, but we need to return std::pair<const K, V>
-    // ---------------------------------------------------------------------
-    typedef T                                              mutable_value_type;
-    typedef mutable_value_type&                            mutable_reference;
-    typedef const mutable_value_type&                      const_mutable_reference;
-    typedef mutable_value_type*                            mutable_pointer;
-    typedef const mutable_value_type*                      const_mutable_pointer;
-
-#define spp_mutable_ref(x) (*(reinterpret_cast<mutable_pointer>(&(x))))
-#define spp_const_mutable_ref(x) (*(reinterpret_cast<const_mutable_pointer>(&(x))))
-
-    typedef typename Alloc::template rebind<T>::other      value_alloc_type;
+    // T can be std::pair<const K, V>, but sometime we need to cast to a mutable type
+    // ------------------------------------------------------------------------------
+    typedef typename spp::cvt<T>::type                     mutable_value_type;
+    typedef mutable_value_type *                           mutable_pointer;
+    typedef const mutable_value_type *                     const_mutable_pointer;
 
     bool _bmtest(size_type i) const   { return !!(_bitmap & (static_cast<group_bm_type>(1) << i)); }
     void _bmset(size_type i)          { _bitmap |= static_cast<group_bm_type>(1) << i; }
@@ -2409,14 +2396,14 @@ private:
 #endif
     }
 
-    mutable_pointer _allocate_group(Alloc &alloc, uint32_t n /* , bool tight = false */) 
+    pointer _allocate_group(allocator_type &alloc, uint32_t n /* , bool tight = false */) 
     {
         // ignore tight since we don't store num_alloc
         // num_alloc = (uint8_t)(tight ? n : _sizing(n));
 
         uint32_t num_alloc = (uint8_t)_sizing(n);
         _set_num_alloc(num_alloc);
-        mutable_pointer retval = alloc.allocate(static_cast<size_type>(num_alloc));
+        pointer retval = alloc.allocate(static_cast<size_type>(num_alloc));
         if (retval == NULL) 
         {
             // the allocator is supposed to throw an exception if the allocation fails.
@@ -2426,15 +2413,15 @@ private:
         return retval;
     }
 
-    void _free_group(Alloc &alloc, uint32_t num_alloc)
+    void _free_group(allocator_type &alloc, uint32_t num_alloc)
     {
         if (_group)  
         {
             uint32_t num_buckets = _num_items();
             if (num_buckets)
             {
-                mutable_pointer end_it = _group + num_buckets;
-                for (mutable_pointer p = _group; p != end_it; ++p)
+                mutable_pointer end_it = (mutable_pointer)(_group + num_buckets);
+                for (mutable_pointer p = (mutable_pointer)_group; p != end_it; ++p)
                     p->~mutable_value_type();
             }
             alloc.deallocate(_group, (typename allocator_type::size_type)num_alloc);
@@ -2544,7 +2531,7 @@ public:
     }
 
     // It's always nice to be able to clear a table without deallocating it
-    void clear(Alloc &alloc, bool erased) 
+    void clear(allocator_type &alloc, bool erased) 
     {
         _free_group(alloc, _num_alloc());
         _bitmap = 0;
@@ -2573,54 +2560,54 @@ public:
         return (reference)_group[pos_to_offset(i)];
     }
 
-    typedef std::pair<mutable_pointer, bool> SetResult;
+    typedef std::pair<pointer, bool> SetResult;
 
 private:
     typedef spp_::integral_constant<bool,
                                     (spp_::is_relocatable<value_type>::value &&
                                      spp_::is_same<allocator_type,
-                                                   spp_::libc_allocator_with_realloc<mutable_value_type> >::value)>
+                                                   spp_::libc_allocator_with_realloc<value_type> >::value)>
             realloc_and_memmove_ok; 
 
     // ------------------------- memory at *p is uninitialized => need to construct
     void _init_val(mutable_value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        ::new (p) mutable_value_type(std::move(val));
+        ::new (p) value_type(std::move(val));
 #else
-        ::new (p) mutable_value_type(val);
+        ::new (p) value_type(val);
 #endif
     }
 
     // ------------------------- memory at *p is uninitialized => need to construct
     void _init_val(mutable_value_type *p, const_reference val)
     {
-        ::new (p) mutable_value_type(val);
+        ::new (p) value_type(val);
     }
 
     // ------------------------------------------------ memory at *p is initialized
-    void _set_val(mutable_value_type *p, reference val)
+    void _set_val(value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        *p = std::move(val);
+        *(mutable_pointer)p = std::move(val);
 #else
         using std::swap;
-        swap(*p, spp_mutable_ref(val)); 
+        swap(*(mutable_pointer)p, *(mutable_pointer)&val); 
 #endif
     }
 
     // ------------------------------------------------ memory at *p is initialized
-    void _set_val(mutable_value_type *p, const_reference val)
+    void _set_val(value_type *p, const_reference val)
     {
-        *p = spp_const_mutable_ref(val);
+        *(mutable_pointer)p = *(const_mutable_pointer)&val;
     }
 
     // Our default allocator - try to merge memory buffers
     // right now it uses Google's traits, but we should use something like folly::IsRelocatable
-    // return true if the slot was constructed (i.e. contains a valid mutable_value_type
+    // return true if the slot was constructed (i.e. contains a valid value_type
     // ---------------------------------------------------------------------------------
     template <class Val>
-    void _set_aux(Alloc &alloc, size_type offset, Val &val, spp_::true_type) 
+    void _set_aux(allocator_type &alloc, size_type offset, Val &val, spp_::true_type) 
     {
         //static int x=0;  if (++x < 10) printf("x\n"); // check we are getting here
         
@@ -2637,15 +2624,15 @@ private:
         for (uint32_t i = num_items; i > offset; --i)
             memcpy(_group + i, _group + i-1, sizeof(*_group));
 
-        _init_val(_group + offset, val);
+        _init_val((mutable_pointer)(_group + offset), val);
     }
 
     // Create space at _group[offset], without special assumptions about value_type
     // and allocator_type, with a default value
-    // return true if the slot was constructed (i.e. contains a valid mutable_value_type
+    // return true if the slot was constructed (i.e. contains a valid value_type
     // ---------------------------------------------------------------------------------
     template <class Val>
-    void _set_aux(Alloc &alloc, size_type offset, Val &val, spp_::false_type) 
+    void _set_aux(allocator_type &alloc, size_type offset, Val &val, spp_::false_type) 
     {
         uint32_t  num_items = _num_items();
         uint32_t  num_alloc = _sizing(num_items);
@@ -2654,29 +2641,31 @@ private:
         if (num_items < num_alloc)
         {
             // create new object at end and rotate it to position
-            _init_val(&_group[num_items], val);
-            std::rotate(_group + offset, _group + num_items, _group + num_items + 1);
+            _init_val((mutable_pointer)&_group[num_items], val);
+            std::rotate((mutable_pointer)(_group + offset), 
+                        (mutable_pointer)(_group + num_items),
+                        (mutable_pointer)(_group + num_items + 1));
             return;
         }
 
         // This is valid because 0 <= offset <= num_items
-        mutable_pointer p = _allocate_group(alloc, _sizing(num_items + 1));
+        pointer p = _allocate_group(alloc, _sizing(num_items + 1));
         if (offset)
-            std::uninitialized_copy(MK_MOVE_IT(_group), 
-                                    MK_MOVE_IT(_group + offset),
-                                    p);
+            std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)_group), 
+                                    MK_MOVE_IT((mutable_pointer)(_group + offset)),
+                                    (mutable_pointer)p);
         if (num_items > offset)
-            std::uninitialized_copy(MK_MOVE_IT(_group + offset),
-                                    MK_MOVE_IT(_group + num_items),
-                                    p + offset + 1);
-        _init_val(p + offset, val);
+            std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group + offset)),
+                                    MK_MOVE_IT((mutable_pointer)(_group + num_items)),
+                                    (mutable_pointer)(p + offset + 1));
+        _init_val((mutable_pointer)(p + offset), val);
         _free_group(alloc, num_alloc);
         _group = p;
     }
 
     // ----------------------------------------------------------------------------------
     template <class Val>
-    void _set(Alloc &alloc, size_type i, size_type offset, Val &val)
+    void _set(allocator_type &alloc, size_type i, size_type offset, Val &val)
     {
         if (!_bmtest(i)) 
         {
@@ -2693,7 +2682,7 @@ public:
     // This returns the pointer to the inserted item
     // ---------------------------------------------
     template <class Val>
-    pointer set(Alloc &alloc, size_type i, Val &val)
+    pointer set(allocator_type &alloc, size_type i, Val &val)
     {
         _bme_clear(i); // in case this was an "erased" location
 
@@ -2721,7 +2710,7 @@ private:
     // constructor and destructor, and the allocator_type is the default
     // libc_allocator_with_alloc. 
     // -----------------------------------------------------------------------
-    void _group_erase_aux(Alloc &alloc, size_type offset, spp_::true_type) 
+    void _group_erase_aux(allocator_type &alloc, size_type offset, spp_::true_type) 
     {
         // static int x=0;  if (++x < 10) printf("Y\n"); // check we are getting here
         uint32_t  num_items = _num_items();
@@ -2735,7 +2724,7 @@ private:
             return;
         }
 
-        _group[offset].~mutable_value_type();
+        _group[offset].~value_type();
 
         for (size_type i = offset; i < num_items - 1; ++i)
             memcpy(_group + i, _group + i + 1, sizeof(*_group));
@@ -2752,25 +2741,25 @@ private:
     // Shrink the array, without any special assumptions about value_type and
     // allocator_type.
     // --------------------------------------------------------------------------
-    void _group_erase_aux(Alloc &alloc, size_type offset, spp_::false_type) 
+    void _group_erase_aux(allocator_type &alloc, size_type offset, spp_::false_type) 
     {
         uint32_t  num_items = _num_items();
         uint32_t  num_alloc   = _sizing(num_items);
 
         if (_sizing(num_items - 1) != num_alloc)
         {
-            mutable_pointer p = 0;
+            pointer p = 0;
             if (num_items > 1)
             {
                 p = _allocate_group(alloc, num_items - 1);
                 if (offset)
-                    std::uninitialized_copy(MK_MOVE_IT(_group), 
-                                            MK_MOVE_IT(_group + offset), 
-                                            p);
+                    std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group)), 
+                                            MK_MOVE_IT((mutable_pointer)(_group + offset)), 
+                                            (mutable_pointer)(p));
                 if (static_cast<uint32_t>(offset + 1) < num_items)
-                    std::uninitialized_copy(MK_MOVE_IT(_group + offset + 1), 
-                                            MK_MOVE_IT(_group + num_items),
-                                            p + offset);
+                    std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group + offset + 1)), 
+                                            MK_MOVE_IT((mutable_pointer)(_group + num_items)),
+                                            (mutable_pointer)(p + offset));
             }
             else
             {
@@ -2782,19 +2771,21 @@ private:
         }
         else
         {
-            std::rotate(_group + offset, _group + offset + 1, _group + num_items);
-            _group[num_items - 1].~mutable_value_type();
+            std::rotate((mutable_pointer)(_group + offset), 
+                        (mutable_pointer)(_group + offset + 1),
+                        (mutable_pointer)(_group + num_items));
+            ((mutable_pointer)(_group + num_items - 1))->~mutable_value_type();
         }
     }
 
-    void _group_erase(Alloc &alloc, size_type offset)
+    void _group_erase(allocator_type &alloc, size_type offset)
     {
         _group_erase_aux(alloc, offset, realloc_and_memmove_ok());
     }
 
 public:
     template <class twod_iter>
-    bool erase_ne(Alloc &alloc, twod_iter &it)
+    bool erase_ne(allocator_type &alloc, twod_iter &it)
     {
         assert(_group && it.col_current != ne_end());
         size_type offset = (size_type)(it.col_current - ne_begin());
@@ -2825,7 +2816,7 @@ public:
     // TODO(austern): Make this exception safe: handle exceptions from
     // value_type's copy constructor.
     // ---------------------------------------------------------------
-    void erase(Alloc &alloc, size_type i)
+    void erase(allocator_type &alloc, size_type i)
     {
         if (_bmtest(i))
         { 
@@ -2859,7 +2850,7 @@ public:
     }
 
     // Reading destroys the old group contents!  Returns true if all was ok.
-    template <typename INPUT> bool read_metadata(Alloc &alloc, INPUT *fp) 
+    template <typename INPUT> bool read_metadata(allocator_type &alloc, INPUT *fp) 
     {
         clear(alloc, true);
 
@@ -2921,8 +2912,8 @@ public:
     bool operator> (const sparsegroup& x) const { return x < *this; }
     bool operator>=(const sparsegroup& x) const { return !(*this < x); }
 
-    void mark()            { _group = (mutable_value_type *)static_cast<uintptr_t>(-1); }
-    bool is_marked() const { return _group == (mutable_value_type *)static_cast<uintptr_t>(-1); }
+    void mark()            { _group = (value_type *)static_cast<uintptr_t>(-1); }
+    bool is_marked() const { return _group == (value_type *)static_cast<uintptr_t>(-1); }
 
 private:
     // ---------------------------------------------------------------------------
@@ -2992,7 +2983,7 @@ private:
 
     // The actual data
     // ---------------
-    mutable_value_type * _group;                             // (small) array of T's
+    value_type *         _group;                             // (small) array of T's
     group_bm_type        _bitmap;
     group_bm_type        _bm_erased;                         // ones where items have been erased
 
@@ -3016,30 +3007,24 @@ inline void swap(sparsegroup<T,Alloc> &x, sparsegroup<T,Alloc> &y)
 template <class T, class Alloc = libc_allocator_with_realloc<T> >
 class sparsetable 
 {
+public:
+    typedef T                                             value_type;
+    typedef Alloc                                         allocator_type;
+    typedef sparsegroup<value_type, allocator_type>       group_type;
+
 private:
-    typedef typename Alloc::template rebind<T>::other     value_alloc_type;
-
-    typedef typename Alloc::template rebind<
-        sparsegroup<T, value_alloc_type> >::other group_alloc_type;
+    typedef typename Alloc::template rebind<group_type>::other group_alloc_type;
     typedef typename group_alloc_type::size_type          group_size_type;
-
-    typedef T                                             mutable_value_type;
-    typedef mutable_value_type*                           mutable_pointer;
-    typedef const mutable_value_type*                     const_mutable_pointer;
 
 public:
     // Basic types
     // -----------
-    typedef typename spp::cvt<T>::type                    value_type;
-    typedef Alloc                                         allocator_type;
-    typedef typename value_alloc_type::size_type          size_type;
-    typedef typename value_alloc_type::difference_type    difference_type;
+    typedef typename allocator_type::size_type            size_type;
+    typedef typename allocator_type::difference_type      difference_type;
     typedef value_type&                                   reference;
     typedef const value_type&                             const_reference;
     typedef value_type*                                   pointer;
     typedef const value_type*                             const_pointer;
-
-    typedef sparsegroup<T, value_alloc_type>              group_type;
 
     typedef group_type&                                   GroupsReference;
     typedef const group_type&                             GroupsConstReference;
@@ -3047,8 +3032,8 @@ public:
     typedef typename group_type::ne_iterator              ColIterator;
     typedef typename group_type::const_ne_iterator        ColConstIterator;
 
-    typedef table_iterator<sparsetable<T, Alloc> >        iterator;       // defined with index
-    typedef const_table_iterator<sparsetable<T, Alloc> >  const_iterator; // defined with index
+    typedef table_iterator<sparsetable<T, allocator_type> >        iterator;       // defined with index
+    typedef const_table_iterator<sparsetable<T, allocator_type> >  const_iterator; // defined with index
     typedef std::reverse_iterator<const_iterator>         const_reverse_iterator;
     typedef std::reverse_iterator<iterator>               reverse_iterator;
 
@@ -3072,7 +3057,7 @@ public:
                                        group_type *, 
                                        ColIterator,
                                        std::input_iterator_tag, 
-                                       allocator_type>       destructive_iterator;
+                                       allocator_type>     destructive_iterator;
 
     typedef std::reverse_iterator<ne_iterator>               reverse_ne_iterator;
     typedef std::reverse_iterator<const_ne_iterator>         const_reverse_ne_iterator;
@@ -3218,7 +3203,7 @@ public:
 
 public:
     // Constructors -- default, normal (when you specify size), and copy
-    explicit sparsetable(size_type sz = 0, const Alloc &alloc = Alloc()) : 
+    explicit sparsetable(size_type sz = 0, const allocator_type &alloc = allocator_type()) : 
         _first_group(0), 
         _last_group(0),
         _table_size(sz),
@@ -3255,7 +3240,7 @@ public:
         this->swap(o);
     }
 
-    sparsetable(sparsetable&& o, const Alloc &alloc)
+    sparsetable(sparsetable&& o, const allocator_type &alloc)
     {
         _init();
         this->swap(o);
@@ -3690,7 +3675,7 @@ public:
     }
     bool operator!=(const sparsetable& x) const { return !(*this == x); }
     bool operator<=(const sparsetable& x) const { return !(x < *this); }
-    bool operator>(const sparsetable& x) const { return x < *this; }
+    bool operator>(const sparsetable& x)  const { return x < *this; }
     bool operator>=(const sparsetable& x) const { return !(*this < x); }
 
 
@@ -3702,7 +3687,7 @@ private:
     size_type        _table_size;          // how many buckets they want
     size_type        _num_buckets;         // number of non-empty buckets
     group_alloc_type _group_alloc;
-    value_alloc_type _alloc;
+    allocator_type   _alloc;
 };
 
 // We need a global swap as well
@@ -3747,26 +3732,22 @@ template <class Value, class Key, class HashFcn,
           class ExtractKey, class SetKey, class EqualKey, class Alloc>
 class sparse_hashtable 
 {
-private:
-    typedef Value                                      mutable_value_type;
-    typedef typename Alloc::template rebind<Value>::other value_alloc_type;
-
 public:
     typedef Key                                        key_type;
-    typedef typename spp::cvt<Value>::type             value_type;
+    typedef Value                                      value_type;
     typedef HashFcn                                    hasher; // user provided or spp_hash<Key>
     typedef EqualKey                                   key_equal;
     typedef Alloc                                      allocator_type;
 
-    typedef typename value_alloc_type::size_type       size_type;
-    typedef typename value_alloc_type::difference_type difference_type;
+    typedef typename allocator_type::size_type         size_type;
+    typedef typename allocator_type::difference_type   difference_type;
     typedef value_type&                                reference;
     typedef const value_type&                          const_reference;
     typedef value_type*                                pointer;
     typedef const value_type*                          const_pointer;
     
     // Table is the main storage class.
-    typedef sparsetable<mutable_value_type, value_alloc_type> Table;
+    typedef sparsetable<value_type, allocator_type>   Table;
     typedef typename Table::ne_iterator               ne_it;
     typedef typename Table::const_ne_iterator         cne_it;
     typedef typename Table::destructive_iterator      dest_it;
@@ -4146,14 +4127,14 @@ public:
                               const EqualKey& eql = EqualKey(),
                               const ExtractKey& ext = ExtractKey(),
                               const SetKey& set = SetKey(),
-                              const Alloc& alloc = Alloc())
+                              const allocator_type& alloc = allocator_type())
         : settings(hf),
           key_info(ext, set, eql),
           num_deleted(0),
           table((expected_max_items_in_table == 0
                  ? HT_DEFAULT_STARTING_BUCKETS
                  : settings.min_buckets(expected_max_items_in_table, 0)),
-                value_alloc_type(alloc)) 
+                allocator_type(alloc)) 
     {
         settings.reset_thresholds(bucket_count());
     }
@@ -4184,7 +4165,7 @@ public:
     {
     }
 
-    sparse_hashtable(sparse_hashtable&& o, const Alloc& alloc) :
+    sparse_hashtable(sparse_hashtable&& o, const allocator_type& alloc) :
         settings(std::move(o.settings)),
         key_info(std::move(o.key_info)),
         num_deleted(o.num_deleted),
@@ -4613,22 +4594,13 @@ public:
     // Deleted key routines - just to keep google test framework happy
     // we don't actually use the deleted key
     // ---------------------------------------------------------------
-    void set_deleted_key(const key_type& key)   
+    void set_deleted_key(const key_type&)   
     {
-        _squash_deleted();
-        key_info.delkey = key;
     }
 
     void clear_deleted_key()
     {
-        _squash_deleted();
     }
-
-    key_type deleted_key() const 
-    {
-         return key_info.delkey;
-    }
-
 
     bool operator==(const sparse_hashtable& ht) const 
     {
@@ -4670,7 +4642,6 @@ public:
     template <typename OUTPUT>
     bool write_metadata(OUTPUT *fp) 
     {
-        _squash_deleted();           // so we don't have to worry about delkey
         return table.write_metadata(fp);
     }
 
@@ -4709,7 +4680,6 @@ public:
     template <typename ValueSerializer, typename OUTPUT>
     bool serialize(ValueSerializer serializer, OUTPUT *fp)
     {
-        _squash_deleted();           // so we don't have to worry about delkey
         return table.serialize(serializer, fp);
     }
 
@@ -4761,8 +4731,6 @@ private:
         {
             return EqualKey::operator()(a, b);
         }
-
-        typename spp_::remove_const<key_type>::type delkey;
     };
 
     // Utility functions to access the templated operators
@@ -4822,8 +4790,6 @@ const int sparse_hashtable<V,K,HF,ExK,SetK,EqK,A>::HT_EMPTY_PCT
                    sparse_hashtable<V,K,HF,ExK,SetK,EqK,A>::HT_OCCUPANCY_PCT);
 
 
-
-
 //  ----------------------------------------------------------------------
 //                   S P A R S E _ H A S H _ M A P
 //  ----------------------------------------------------------------------
@@ -4833,13 +4799,16 @@ template <class Key, class T,
           class Alloc = libc_allocator_with_realloc<std::pair<const Key, T> > >
 class sparse_hash_map 
 {
+public:
+    typedef typename std::pair<const Key, T> value_type;
+
 private:
     // Apparently select1st is not stl-standard, so we define our own
     struct SelectKey 
     {
         typedef const Key& result_type;
 
-        inline const Key& operator()(const std::pair<const Key, T>& p) const 
+        inline const Key& operator()(const value_type& p) const 
         {
             return p.first;
         }
@@ -4847,7 +4816,7 @@ private:
 
     struct SetKey 
     {
-        inline void operator()(std::pair<const Key, T>* value, const Key& new_key) const
+        inline void operator()(value_type* value, const Key& new_key) const
         {
             *const_cast<Key*>(&value->first) = new_key;
         }
@@ -4856,21 +4825,20 @@ private:
     // For operator[].
     struct DefaultValue 
     {
-        inline std::pair<const Key, T> operator()(const Key& key)  const
+        inline value_type operator()(const Key& key)  const
         {
             return std::make_pair(key, T());
         }
     };
 
     // The actual data
-    typedef sparse_hashtable<std::pair<typename spp_::remove_const<Key>::type, T>, Key, HashFcn, SelectKey,
+    typedef sparse_hashtable<value_type, Key, HashFcn, SelectKey,
                              SetKey, EqualKey, Alloc> ht;
 
 public:
     typedef typename ht::key_type             key_type;
     typedef T                                 data_type;
     typedef T                                 mapped_type;
-    typedef typename std::pair<const Key, T>  value_type;
     typedef typename ht::hasher               hasher;
     typedef typename ht::key_equal            key_equal;
     typedef Alloc                             allocator_type;
@@ -5233,12 +5201,12 @@ private:
     struct Identity 
     {
         typedef const Value& result_type;
-        const Value& operator()(const Value& v) const { return v; }
+        inline const Value& operator()(const Value& v) const { return v; }
     };
 
     struct SetKey 
     {
-        void operator()(Value* value, const Value& new_key) const 
+        inline void operator()(Value* value, const Value& new_key) const 
         {
             *value = new_key;
         }
