@@ -1549,7 +1549,7 @@ TEST(HashtableTest, ReferenceWrapper)
 }
 #endif
 
-#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+#if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
 class CNonCopyable
 {
 public:
@@ -1566,14 +1566,12 @@ struct Probe : CNonCopyable
     void operator=(Probe &&)	{}
 };
 
-template <typename K, typename V>
-    using THashMap = spp::sparse_hash_map<K, V>;
-
 TEST(HashtableTest, NonCopyable) 
 {
-    THashMap<uint64_t, Probe> probes;
+    typedef spp::sparse_hash_map<uint64_t, Probe> THashMap;
+    THashMap probes;
     
-    probes.insert(THashMap<uint64_t, Probe>::value_type(27, Probe()));
+    probes.insert(THashMap::value_type(27, Probe()));
     EXPECT_EQ(probes.begin()->first, 27);
 }
 
