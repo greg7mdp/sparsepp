@@ -8,4 +8,7 @@ compiler:
   - clang
   - gcc
 
+dist: trusty
+sudo: false
+
 script: make && make test
