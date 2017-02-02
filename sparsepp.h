@@ -4973,11 +4973,11 @@ public:
     {}
 
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-    sparse_hash_map(const sparse_hash_map &&o) :
+    sparse_hash_map(sparse_hash_map &&o) :
         rep(std::move(o.rep))
     {}
 
-    sparse_hash_map(const sparse_hash_map &&o,
+    sparse_hash_map(sparse_hash_map &&o,
                     const allocator_type& alloc) :
         rep(std::move(o.rep), alloc)
     {}
@@ -5356,11 +5356,11 @@ public:
     {}
 
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-    sparse_hash_set(const sparse_hash_set &&o) :
+    sparse_hash_set(sparse_hash_set &&o) :
         rep(std::move(o.rep))
     {}
 
-    sparse_hash_set(const sparse_hash_set &&o,
+    sparse_hash_set(sparse_hash_set &&o,
                     const allocator_type& alloc) :
         rep(std::move(o.rep), alloc)
     {}
