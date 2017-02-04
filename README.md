@@ -125,7 +125,7 @@ These classes provide the same interface as std::unordered_map and std::unordere
    
    ```
 
-2. When the user provides its own hash function, for example when inserting custom classes into a hash map, sometimes the resulting hash keys have similar low order bits and cause many collisions, decreasing the efficiency of the hash map. To address this use case, sparsepp provides an optional 'mixing' of the hash key (see [Integer Hash Function](https://gist.github.com/badboy/6267743) which can be enabled by defining the proprocessor macro: SPP_HASH_MIX. 
+2. When the user provides its own hash function, for example when inserting custom classes into a hash map, sometimes the resulting hash keys have similar low order bits and cause many collisions, decreasing the efficiency of the hash map. To address this use case, sparsepp provides an optional 'mixing' of the hash key (see [Integer Hash Function](https://gist.github.com/badboy/6267743) which can be enabled by defining the proprocessor macro: SPP_MIX_HASH. 
 
 ## Example 2 - providing a hash function for a user-defined class
 
