@@ -319,5 +319,12 @@ int main(int argc, char* argv[])
 }
 ```
 
+## Thread safety
 
+Sparsepp follows the trade safety rules of the Standard C++ library. In Particular:
 
+- A single sparsepp hash table is thread safe for reading from multiple threads. For example, given a hash table A, it is safe to read A from thread 1 and from thread 2 simultaneously.
+
+- If a single hash table is being written to by one thread, then all reads and writes to that hash table on the same or other threads must be protected. For example, given a hash table A, if thread 1 is writing to A, then thread 2 must be prevented from reading from or writing to A.
+
+- It is safe to read and write to one instance of a type even if another thread is reading or writing to a different instance of the same type. For example, given hash tables A and B of the same type, it is safe if A is being written in thread 1 and B is being read in thread 2.
