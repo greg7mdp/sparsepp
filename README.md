@@ -8,7 +8,7 @@ Sparsepp is derived from Google's excellent [sparsehash](https://github.com/spar
 - **Extremely low memory usage** (typically about one byte overhead per entry).
 - **Very efficient**, typically faster than your compiler's unordered map/set or Boost's.
 - **C++11 support** (if supported by compiler).
-- **Single header** implementation - just copy `sparsepp.h` to your project and include it.
+- ~~Single header~~ not anymore
 - **Tested** on Windows (vs2010-2015, g++), linux (g++, clang++) and MacOS (clang++).
 
 We believe Sparsepp provides an unparalleled combination of performance and memory usage, and will outperform your compiler's unordered_map on both counts. Only Google's `dense_hash_map` is consistently faster, at the cost of much greater memory usage (especially when the final size of the map is not known in advance). 
@@ -20,7 +20,7 @@ For a detailed comparison of various hash implementations, including Sparsepp, p
 ```c++
 #include <iostream>
 #include <string>
-#include <sparsepp.h>
+#include <sparsepp/spp.h>
 
 using spp::sparse_hash_map;
  
@@ -50,9 +50,7 @@ int main()
 
 ## Installation
 
-Since the full Sparsepp implementation is contained in a single header file `sparsepp.h`, the installation consist in copying this header file wherever it will be convenient to include in your project(s). 
-
-Optionally, a second header file `spp_utils.h` is provided, which implements only the spp::hash_combine() functionality. This is useful when we want to specify a hash function for a user-defined class in an header file, without including the full `sparsepp.h` header (this is demonstrated in [example 2](#example-2---providing-a-hash-function-for-a-user-defined-class) below).
+No compilation is needed, as this is a header-only library. The installation consist in copying the sparsepp directory wherever it will be convenient to include in your project(s). Also make the path to this directory is provided to the compiler with the `-I` option.
 
 ## Warning - iterator invalidation on erase/insert
 
@@ -62,7 +60,7 @@ Optionally, a second header file `spp_utils.h` is provided, which implements onl
 
 ## Usage
 
-As shown in the example above, you need to include the header file: `#include <sparsepp.h>`
+As shown in the example above, you need to include the header file: `#include <sparsepp/spp.h>`
 
 This provides the implementation for the following classes:
 
@@ -107,7 +105,7 @@ These classes provide the same interface as std::unordered_map and std::unordere
    Of course, the user of sparsepp may provide its own hash function,  as shown below:
    
    ```c++
-   #include <sparsepp.h>
+   #include <sparsepp/spp.h>
    
    struct Hash64 {
        size_t operator()(uint64_t k) const { return (k ^ 14695981039346656037ULL) * 1099511628211ULL; }
@@ -135,7 +133,7 @@ In order to use a sparse_hash_set or sparse_hash_map, a hash function should be 
 #include <iostream>
 #include <functional>
 #include <string>
-#include "sparsepp.h"
+#include <sparsepp/spp.h>
 
 using std::string;
 
@@ -179,11 +177,11 @@ int main()
 
 The `std::hash` specialization for `Person` combines the hash values for both first and last name using the convenient spp::hash_combine function, and returns the combined hash value. 
 
-spp::hash_combine is provided by the header `sparsepp.h`. However, class definitions often appear in header files, and it is desirable to limit the size of headers included in such header files, so we provide the very small header `spp_utils.h` for that purpose:
+spp::hash_combine is provided by the header `sparsepp/spp.h`. However, class definitions often appear in header files, and it is desirable to limit the size of headers included in such header files, so we provide the very small header `sparsepp/spp_utils.h` for that purpose:
 
 ```c++
 #include <string>
-#include "spp_utils.h"
+#include <sparsepp/spp_utils.h>
 
 using std::string;
  
@@ -236,7 +234,7 @@ The following example demontrates how a simple sparse_hash_map can be written to
 ```c++
 #include <cstdio>
 
-#include "sparsepp.h"
+#include <sparsepp/spp.h>
 
 using spp::sparse_hash_map;
 using namespace std;

@@ -41,7 +41,7 @@
     #pragma warning( disable : 4996 ) // 'fopen': This function or variable may be unsafe
 #endif
 
-#include "sparsepp.h"
+#include <sparsepp/spp.h>
 
 #ifdef _MSC_VER 
     #pragma warning( disable : 4127 ) // conditional expression is constant
@@ -431,9 +431,9 @@ protected:
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 template <class Key, class T,
-          class HashFcn = SPP_HASH_CLASS<Key>,
+          class HashFcn  = SPP_HASH_CLASS<Key>,
           class EqualKey = std::equal_to<Key>,
-          class Alloc = spp::libc_allocator_with_realloc<std::pair<const Key, T> > >
+          class Alloc    = SPP_DEFAULT_ALLOCATOR<std::pair<const Key, T> > >
 class HashtableInterface_SparseHashMap
     : public BaseHashtableInterface< sparse_hash_map<Key, T, HashFcn,
                                                      EqualKey, Alloc> >
@@ -517,9 +517,9 @@ void swap(HashtableInterface_SparseHashMap<K,T,H,E,A>& a,
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 template <class Value,
-          class HashFcn = SPP_HASH_CLASS<Value>,
+          class HashFcn  = SPP_HASH_CLASS<Value>,
           class EqualKey = std::equal_to<Value>,
-          class Alloc = spp::libc_allocator_with_realloc<Value> >
+          class Alloc    = SPP_DEFAULT_ALLOCATOR<Value> >
 class HashtableInterface_SparseHashSet
     : public BaseHashtableInterface< sparse_hash_set<Value, HashFcn,
                                                      EqualKey, Alloc> > 
@@ -748,8 +748,8 @@ void EXPECT_TRUE(bool cond)
     }
 }
 
-SPP_START_NAMESPACE
-
+namespace spp_
+{
 
 namespace testing 
 {
@@ -896,8 +896,7 @@ class Test { };
 
 } // namespace testing
 
-SPP_END_NAMESPACE
-
+} // namespace spp_
 
 namespace testing = SPP_NAMESPACE::testing;
 
@@ -1564,6 +1563,10 @@ struct Probe : CNonCopyable
     Probe() {}
     Probe(Probe &&) {}
     void operator=(Probe &&)	{}
+
+private:
+    Probe(const Probe &);
+    Probe& operator=(const Probe &);
 };
 
 TEST(HashtableTest, NonCopyable) 

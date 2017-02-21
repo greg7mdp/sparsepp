@@ -63,10 +63,6 @@
 //                  ----------------------------
 //
 //    Implements spp::spp_hash() and spp::hash_combine()
-//
-//    The exact same code is duplicated in sparsepp.h.
-//
-//    WARNING: Any change here has to be duplicated in sparsepp.h.
 //  ----------------------------------------------------------------------
 
 #if !defined(spp_utils_h_guard_)
@@ -127,12 +123,15 @@
 
 #define SPP_INLINE
 
-#ifndef SPP_NAMESPACE
-    #define SPP_NAMESPACE spp
+#ifndef spp_
+    #define spp_ spp
 #endif
 
-namespace SPP_NAMESPACE
+namespace spp_
 {
+
+template <class T>  T spp_min(T a, T b) { return a < b  ? a : b; }
+template <class T>  T spp_max(T a, T b) { return a >= b ? a : b; }
 
 template <class T>
 struct spp_hash
@@ -186,7 +185,7 @@ inline size_t spp_mix_64(uint64_t a)
     a = a ^ (a >> 4);
     a = (a ^ 0xdeadbeef) + (a << 5);
     a = a ^ (a >> 11);
-    return a;
+    return (size_t)a;
 }
 
 template <>
@@ -312,7 +311,7 @@ template <class T> struct Combiner<T, 8>
 template <class T>
 inline void hash_combine(std::size_t& seed, T const& v)
 {
-    spp::spp_hash<T> hasher;
+    spp_::spp_hash<T> hasher;
     Combiner<std::size_t, sizeof(std::size_t)> combiner;
 
     combiner(seed, hasher(v));

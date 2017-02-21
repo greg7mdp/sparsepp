@@ -11,4 +11,4 @@ compiler:
 dist: trusty
 sudo: false
 
-script: make && make test
+script: cd tests && make && make test
