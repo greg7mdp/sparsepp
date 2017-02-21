@@ -34,7 +34,8 @@ static inline uint32_t s_spp_popcount_default(uint64_t x) SPP_NOEXCEPT
 
 static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
 {
-    return s_spp_popcount_default((size_t)((v & -v) - 1));
+    size_t x = (v & -v) - 1;
+    return s_spp_popcount_default(x);
 }
 
 static inline uint32_t count_trailing_zeroes_naive(size_t v) SPP_NOEXCEPT
