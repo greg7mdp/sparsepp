@@ -703,7 +703,7 @@ private:
             {
                 if (++lg == num_zeros)
                 {
-                    assert(this->none(cur - num_zeros + 1, num_zeros));
+                    assert(this->none(cur - num_zeros + 1, cur + 1));
                     return cur - num_zeros + 1;
                 }
             }
