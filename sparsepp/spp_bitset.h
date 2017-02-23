@@ -71,6 +71,18 @@ static inline uint32_t count_trailing_zeroes_naive(size_t v) SPP_NOEXCEPT
     return count;
 }
 
+static inline uint32_t  count_leading_zeros(size_t  v) SPP_NOEXCEPT
+{
+    v = v | (v >> 1);
+    v = v | (v >> 2);
+    v = v | (v >> 4);
+    v = v | (v >> 8);
+    v = v | (v >>16);
+    if (sizeof(size_t) == 8)
+        v = v | (v >> 32);
+    return s_spp_popcount_default(~v);
+}
+
 // ----------------------------------------------------------------
 // Bitset whose size is always a multiple of 64 bits
 // ----------------------------------------------------------------
@@ -690,16 +702,26 @@ private:
             if (!test(cur))
             {
                 if (++lg == num_zeros)
+                {
+                    assert(this->none(cur - num_zeros + 1, num_zeros));
                     return cur - num_zeros + 1;
+                }
             }
             else
             {
-                if (0 && cur % bits_per_word == 0)
+                if (cur % bits_per_word == 0)
                 {
                     // can we skip the whole word?
-                    if ((bits_per_word - s_popcount(_bits[_idx(cur)])) < num_zeros)
+                    size_t x = _bits[_idx(cur)];
+                    if (x == (size_t)-1)
                     {
-                        cur += bits_per_word - count_trailing_zeroes(_bits[_idx(cur)]) - 1;
+                        cur += bits_per_word - 1;
+                        if (cur >= end_pos)
+                            return npos;
+                    }
+                    else if (bits_per_word - s_popcount(x) < num_zeros)
+                    {
+                        cur += bits_per_word - count_leading_zeros(x) - 1;
                         if (cur >= end_pos)
                             return npos;
                     }
