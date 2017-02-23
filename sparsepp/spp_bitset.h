@@ -80,7 +80,7 @@ static inline uint32_t  count_leading_zeros(size_t  v) SPP_NOEXCEPT
     v = v | (v >>16);
     if (sizeof(size_t) == 8)
         v = v | (v >> 32);
-    return s_spp_popcount_default(~v);
+    return s_popcount(~v);
 }
 
 // ----------------------------------------------------------------
