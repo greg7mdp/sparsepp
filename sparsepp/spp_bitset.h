@@ -32,11 +32,30 @@ static inline uint32_t s_spp_popcount_default(uint64_t x) SPP_NOEXCEPT
     return (x * h01)>>56;           // returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24)+...
 }
 
-static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
-{
-    size_t x = (v & -v) - 1;
-    return sizeof(size_t) == 8 ? s_spp_popcount_default((uint64_t)x) : s_spp_popcount_default((uint32_t)x);
-}
+#ifdef __APPLE__
+    static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
+    {
+        size_t x = (v & -v) - 1;
+        // sadly sizeof() required to build on macos 
+        return sizeof(size_t) == 8 ? s_spp_popcount_default((uint64_t)x) : s_spp_popcount_default((uint32_t)x);
+    }
+
+    static inline uint32_t s_popcount(size_t v) SPP_NOEXCEPT
+    {
+        // sadly sizeof() required to build on macos 
+        return sizeof(size_t) == 8 ? s_spp_popcount_default((uint64_t)v) : s_spp_popcount_default((uint32_t)v);
+    }
+#else
+    static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
+    {
+        return s_spp_popcount_default((v & -v) - 1);
+    }
+
+    static inline uint32_t s_popcount(size_t v) SPP_NOEXCEPT
+    {
+        return s_spp_popcount_default(v);
+    }
+#endif
 
 static inline uint32_t count_trailing_zeroes_naive(size_t v) SPP_NOEXCEPT
 {
@@ -362,7 +381,7 @@ public:
         size_t cnt = 0;
 
         for (size_t i=0; i<num_words; ++i)
-            cnt += s_spp_popcount_default(_bits[i]);
+            cnt += s_popcount(_bits[i]);
 
         return cnt;
     }
@@ -500,7 +519,8 @@ public:
             return ceiling; // must be ceiling, not hi
         }
 
-        start_pos -= hi - 1;
+        if (start_pos != (size_t)-1)
+            start_pos -= hi - 1;
         return hi;
     }
 
@@ -673,7 +693,19 @@ private:
                     return cur - num_zeros + 1;
             }
             else
+            {
+                if (0 && cur % bits_per_word == 0)
+                {
+                    // can we skip the whole word?
+                    if ((bits_per_word - s_popcount(_bits[_idx(cur)])) < num_zeros)
+                    {
+                        cur += bits_per_word - count_trailing_zeroes(_bits[_idx(cur)]) - 1;
+                        if (cur >= end_pos)
+                            return npos;
+                    }
+                }
                 lg = 0;
+            }
         }
         return npos;
     }

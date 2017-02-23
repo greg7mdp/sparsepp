@@ -170,7 +170,7 @@ private:
     class Page
     {
     public:
-        Page() : _num_free(bm_sz), _start_idx(0) {}
+        Page() : _num_free(bm_sz), _start_idx(0), _lzs_start((size_t)-1) {}
 
         ~Page() { assert(_num_free == bm_sz && _bs.none(0, bm_sz)); }
 
@@ -184,15 +184,18 @@ private:
             _start_idx = start + n;
             _bs.set(start, start + n);
 
-            if (lf == _num_free)
+            if (0 && lf == _num_free)
             {
                 lf  -= (offset_type)n;
                 diff = - (intptr_t)n;
+                // _lzs_start = ??
             }
             else 
                 _update_longest_free(lf, diff);
                 
             _num_free -= n;
+
+            assert(lf >= max_lf || lf <= _num_free);
             assert(_num_free <= bm_sz);
             
             return (T *)&_items[start]; 
@@ -202,7 +205,9 @@ private:
                   offset_type &lf, intptr_t &diff)
         {
             assert(new_sz > old_sz);
-
+            assert(_bs.all(start, start + old_sz));
+            assert(_lzs_start != start);
+            
             bool have_space_after = (start + new_sz <= page_size) &&
                                     _bs.none(start + old_sz, start + new_sz);
             
@@ -212,9 +217,10 @@ private:
             {
                 _bs.set(start + old_sz, start + new_sz);
                 _num_free -= add;
-                if (_lzs_start == (size_t)-1 || lf == max_lf || _lzs_start == start + old_sz)
+                if (_lzs_start == (size_t)-1 || lf >= max_lf || _lzs_start == start + old_sz)
                     _update_longest_free(lf, diff);
 
+                assert(lf >= max_lf || lf <= _num_free);
                 return (T *)&_items[start]; 
             }
             
@@ -223,8 +229,9 @@ private:
             {
                 _bs.set(start - add, start);
                 _num_free -= add;
-                if (_lzs_start == (size_t)-1 || lf == max_lf || _lzs_start + lf == start)
+                if (_lzs_start == (size_t)-1 || lf >= max_lf || _lzs_start + lf == start)
                     _update_longest_free(lf, diff);
+                assert(lf >= max_lf || lf <= _num_free);
                 return (T *)&_items[start - add]; 
             }
 
@@ -232,8 +239,9 @@ private:
             {
                 _bs.set(start + old_sz, start + new_sz);
                 _num_free -= add;
-                if (_lzs_start == (size_t)-1 || lf == max_lf || _lzs_start == start + old_sz)
+                if (_lzs_start == (size_t)-1 || lf >= max_lf || _lzs_start == start + old_sz)
                     _update_longest_free(lf, diff);
+                assert(lf >= max_lf || lf <= _num_free);
                 return (T *)&_items[start]; 
             }
 
@@ -245,10 +253,12 @@ private:
         {
             assert(new_sz < old_sz);
             assert(_bs.all(start, start + old_sz));
+
             _bs.reset(start + new_sz, start + old_sz);
             _num_free += old_sz - new_sz;
             if (lf < max_lf && _lzs_start == start + old_sz)
                 _update_longest_free(lf, diff);
+            assert(lf >= max_lf || lf <= _num_free);
             return (T *)&_items[start];
         }
 
@@ -262,6 +272,7 @@ private:
 #if 1
                 size_t start_pos;
                 offset_type new_lf = (offset_type)_bs.zero_sequence_size_around(start, start+n, start_pos);
+                assert(start_pos == (size_t)-1 || start_pos < bm_sz);
                 if (new_lf > lf)
                 {
                     diff = (intptr_t)new_lf - (intptr_t)lf;
@@ -274,6 +285,7 @@ private:
             }
             else
                 diff = 0;
+            assert(lf >= max_lf || lf <= _num_free);
             return true;
         }
 
@@ -310,6 +322,7 @@ private:
         void _update_longest_free(offset_type &lf, intptr_t &diff)
         {
             offset_type new_lf = (offset_type)longest_free();
+            assert(_lzs_start == (size_t)-1 || _lzs_start < bm_sz);
             if (new_lf == lf)
                 diff = 0;
             else 
@@ -327,7 +340,7 @@ private:
 
         size_t         _num_free;      // within this page
         size_t         _start_idx;     // within this page
-        mutable size_t _lzs_start;     // start index of longuest zero sequence - or -1 if not set
+        mutable size_t _lzs_start;     // start index of longest zero sequence - or -1 if not set
         Bitset         _bs;            // 0 == free, 1 == busy
         TProxy         _items[bm_sz];  // memory returned to user  
     };
@@ -485,7 +498,7 @@ private:
             pointer res = 0;
 
             if (_seg.empty())
-                _seg.resize(_num_seg * 2); // default value _longuest_free OK
+                _seg.resize(_num_seg * 2); // default value _longest_free OK
 
             // check the hint first
             if (hint)
