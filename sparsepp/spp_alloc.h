@@ -86,65 +86,10 @@ public:
 
 #endif
 
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-template<class T>
-class libc_allocator
-{
-public:
-    typedef T         value_type;
-    typedef T*        pointer;
-    typedef ptrdiff_t difference_type;
-    typedef const T*  const_pointer;
-    typedef size_t    size_type;
-
-    libc_allocator() {}
-    libc_allocator(const libc_allocator &) {}
-
-    pointer allocate(size_t n, const_pointer  /* unused */= 0) 
-    {
-        return static_cast<pointer>(malloc(n * sizeof(T)));
-    }
-
-    void deallocate(pointer p, size_t /* unused */) 
-    {
-        free(p);
-    }
-
-    pointer reallocate(pointer p, size_t new_size) 
-    {
-        return static_cast<pointer>(realloc(p, new_size * sizeof(T)));
-    }
-
-    // extra API to match spp_allocator interface
-    pointer reallocate(pointer p, size_t /* old_size */, size_t new_size) 
-    {
-        return static_cast<pointer>(realloc(p, new_size * sizeof(T)));
-    }
-
-    size_type max_size() const
-    {
-        return static_cast<size_type>(-1) / sizeof(value_type);
-    }
-
-    void construct(pointer p, const value_type& val)
-    {
-        new(p) value_type(val);
-    }
-
-    void destroy(pointer p) { p->~value_type(); }
-
-    template<class U>
-    struct rebind
-    {
-        typedef spp_::libc_allocator<U> other;
-    };
-
-};
 
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-template<class T, size_t page_size = 2048>
+template<class T, size_t page_size = SPP_ALLOC_PAGE_SIZE>
 class spp_allocator
 {
 public:
@@ -860,17 +805,6 @@ private:
 
 }  // spp_ namespace
 
-template<class T>
-inline bool operator==(const spp_::libc_allocator<T> &, const spp_::libc_allocator<T> &)
-{
-    return true;
-}
-
-template<class T>
-inline bool operator!=(const spp_::libc_allocator<T> &, const spp_::libc_allocator<T> &)
-{
-    return false;
-}
 
 template<class T>
 inline bool operator==(const spp_::spp_allocator<T> &a, const spp_::spp_allocator<T> &b)

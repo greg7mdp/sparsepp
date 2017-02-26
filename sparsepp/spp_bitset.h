@@ -12,51 +12,6 @@
 namespace spp_
 {
 
-static inline uint32_t s_spp_popcount_default(uint32_t i) SPP_NOEXCEPT
-{
-    i = i - ((i >> 1) & 0x55555555);
-    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-}
-
-static inline uint32_t s_spp_popcount_default(uint64_t x) SPP_NOEXCEPT
-{
-    const uint64_t m1  = uint64_t(0x5555555555555555); // binary: 0101...
-    const uint64_t m2  = uint64_t(0x3333333333333333); // binary: 00110011..
-    const uint64_t m4  = uint64_t(0x0f0f0f0f0f0f0f0f); // binary:  4 zeros,  4 ones ...
-    const uint64_t h01 = uint64_t(0x0101010101010101); // the sum of 256 to the power of 0,1,2,3...
-
-    x -= (x >> 1) & m1;             // put count of each 2 bits into those 2 bits
-    x = (x & m2) + ((x >> 2) & m2); // put count of each 4 bits into those 4 bits 
-    x = (x + (x >> 4)) & m4;        // put count of each 8 bits into those 8 bits 
-    return (x * h01)>>56;           // returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24)+...
-}
-
-#ifdef __APPLE__
-    static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
-    {
-        size_t x = (v & -v) - 1;
-        // sadly sizeof() required to build on macos 
-        return sizeof(size_t) == 8 ? s_spp_popcount_default((uint64_t)x) : s_spp_popcount_default((uint32_t)x);
-    }
-
-    static inline uint32_t s_popcount(size_t v) SPP_NOEXCEPT
-    {
-        // sadly sizeof() required to build on macos 
-        return sizeof(size_t) == 8 ? s_spp_popcount_default((uint64_t)v) : s_spp_popcount_default((uint32_t)v);
-    }
-#else
-    static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
-    {
-        return s_spp_popcount_default((v & -v) - 1);
-    }
-
-    static inline uint32_t s_popcount(size_t v) SPP_NOEXCEPT
-    {
-        return s_spp_popcount_default(v);
-    }
-#endif
-
 static inline uint32_t count_trailing_zeroes_naive(size_t v) SPP_NOEXCEPT
 {
     if (v == 0) 

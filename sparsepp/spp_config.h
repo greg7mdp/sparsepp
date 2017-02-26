@@ -12,9 +12,15 @@
 #define spp_ SPP_NAMESPACE
 
 #ifndef SPP_DEFAULT_ALLOCATOR
-    #define SPP_DEFAULT_ALLOCATOR spp_::libc_allocator
-    //#define SPP_DEFAULT_ALLOCATOR spp_::spp_allocator
+    #ifdef SPP_USE_SPP_ALLOC
+        #define SPP_DEFAULT_ALLOCATOR spp_::spp_allocator
+        #define SPP_INCLUDE_SPP_ALLOC
+    #else
+        #define SPP_DEFAULT_ALLOCATOR spp_::libc_allocator
+    #endif
 #endif
+
+#define SPP_ALLOC_PAGE_SIZE 2048
 
 #ifndef SPP_GROUP_SIZE
     // must be 32 or 64

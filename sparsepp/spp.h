@@ -63,7 +63,10 @@
 #include <sparsepp/spp_stdint.h>  // includes spp_config.h
 #include <sparsepp/spp_traits.h>
 #include <sparsepp/spp_utils.h>
-#include <sparsepp/spp_alloc.h>
+
+#ifdef SPP_INCLUDE_SPP_ALLOC
+    #include <sparsepp/spp_alloc.h>
+#endif
 
 #if !defined(SPP_NO_CXX11_HDR_INITIALIZER_LIST)
     #include <initializer_list>
@@ -3084,6 +3087,7 @@ public:
           key_info(ht.key_info),
           num_deleted(0),
           table(min_buckets_wanted, ht.table.get_allocator())
+          //table(min_buckets_wanted)
     {
         settings.reset_thresholds(bucket_count());
         _move_from(mover, ht, min_buckets_wanted);
