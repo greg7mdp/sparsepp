@@ -89,7 +89,7 @@ public:
 
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-template<class T, size_t page_size = SPP_ALLOC_PAGE_SIZE>
+template<class T, size_t page_size>
 class spp_allocator
 {
 public:
@@ -115,9 +115,11 @@ private:
     class Page
     {
     public:
-        Page() : _num_free(bm_sz), _start_idx(0), _lzs_start((size_t)-1) {}
+        Page() : _num_free(bm_sz), _start_idx(0), _lzs_start(0) {}
 
-        ~Page() { assert(_num_free == bm_sz && _bs.none(0, bm_sz)); }
+        ~Page() { 
+            assert(_num_free == bm_sz && _bs.none(0, bm_sz)); 
+        }
 
         T *allocate(size_type n, offset_type &lf, intptr_t &diff) 
         {
@@ -129,11 +131,11 @@ private:
             _start_idx = start + n;
             _bs.set(start, start + n);
 
-            if (0 && lf == _num_free)
+            if (lf == _num_free && _lzs_start == start)
             {
                 lf  -= (offset_type)n;
                 diff = - (intptr_t)n;
-                // _lzs_start = ??
+                _lzs_start += n;
             }
             else 
                 _update_longest_free(lf, diff);
@@ -142,6 +144,7 @@ private:
 
             assert(lf >= max_lf || lf <= _num_free);
             assert(_num_free <= bm_sz);
+            assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
             
             return (T *)&_items[start]; 
         }
@@ -151,13 +154,16 @@ private:
         {
             assert(new_sz > old_sz);
             assert(_bs.all(start, start + old_sz));
-            assert(_lzs_start != start);
+            assert(_lzs_start != start || lf == 0);
+
+            size_type add = new_sz - old_sz; 
+
+            if (lf < add)
+                return 0;
             
             bool have_space_after = (start + new_sz <= page_size) &&
                                     _bs.none(start + old_sz, start + new_sz);
             
-            size_type add = new_sz - old_sz; 
-
             if (request_space_after && have_space_after)
             {
                 _bs.set(start + old_sz, start + new_sz);
@@ -166,6 +172,7 @@ private:
                     _update_longest_free(lf, diff);
 
                 assert(lf >= max_lf || lf <= _num_free);
+                assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
                 return (T *)&_items[start]; 
             }
             
@@ -177,6 +184,7 @@ private:
                 if (_lzs_start == (size_t)-1 || lf >= max_lf || _lzs_start + lf == start)
                     _update_longest_free(lf, diff);
                 assert(lf >= max_lf || lf <= _num_free);
+                assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
                 return (T *)&_items[start - add]; 
             }
 
@@ -187,6 +195,7 @@ private:
                 if (_lzs_start == (size_t)-1 || lf >= max_lf || _lzs_start == start + old_sz)
                     _update_longest_free(lf, diff);
                 assert(lf >= max_lf || lf <= _num_free);
+                assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
                 return (T *)&_items[start]; 
             }
 
@@ -204,6 +213,7 @@ private:
             if (lf < max_lf && _lzs_start == start + old_sz)
                 _update_longest_free(lf, diff);
             assert(lf >= max_lf || lf <= _num_free);
+            assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
             return (T *)&_items[start];
         }
 
@@ -212,7 +222,12 @@ private:
             assert(_bs.all(start, start + n));
             _bs.reset(start, start + n);
             _num_free += n;
-            if (_num_free < bm_sz && lf < max_lf)
+            if (_num_free == bm_sz)
+            {
+                _lzs_start = 0;
+                lf = bm_sz;
+            }
+            else if (lf < max_lf)
             {
 #if 1
                 size_t start_pos;
@@ -231,6 +246,7 @@ private:
             else
                 diff = 0;
             assert(lf >= max_lf || lf <= _num_free);
+            assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + lf));
             return true;
         }
 
@@ -268,6 +284,7 @@ private:
         {
             offset_type new_lf = (offset_type)longest_free();
             assert(_lzs_start == (size_t)-1 || _lzs_start < bm_sz);
+            assert(_lzs_start ==  (size_t)-1 || _bs.none(_lzs_start, _lzs_start + new_lf));
             if (new_lf == lf)
                 diff = 0;
             else 
