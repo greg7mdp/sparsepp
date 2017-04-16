@@ -1303,7 +1303,7 @@ private:
                           spp_::is_relocatable<value_type>::value), libc_reloc_type, generic_alloc_type>::type
              check_alloc_type;
 #else
-    typedef typename if_<spp_::is_same<allocator_type, spp_allocator<value_type> >::value,
+    typedef typename if_<spp_::is_same<allocator_type, spp_allocator<value_type, SPP_ALLOC_PAGE_SIZE> >::value,
                          typename if_<spp_::is_relocatable<value_type>::value, spp_reloc_type, spp_not_reloc_type>::type,
                          typename if_<(spp_::is_same<allocator_type, libc_allocator<value_type> >::value &&
                                        spp_::is_relocatable<value_type>::value), libc_reloc_type, generic_alloc_type>::type >::type 
@@ -1313,12 +1313,12 @@ private:
 
     //typedef if_<spp_::is_same<allocator_type, libc_allocator<value_type> >::value,
     //            libc_alloc_type,
-    //            if_<spp_::is_same<allocator_type, spp_allocator<value_type> >::value,
+    //            if_<spp_::is_same<allocator_type, spp_allocator<value_type, SPP_ALLOC_PAGE_SIZE> >::value,
     //                spp_alloc_type, user_alloc_type> > check_alloc_type;
 
     //typedef spp_::integral_constant<bool,
     //            (spp_::is_relocatable<value_type>::value &&
-    //             (spp_::is_same<allocator_type, spp_allocator<value_type> >::value ||
+    //             (spp_::is_same<allocator_type, spp_allocator<value_type, SPP_ALLOC_PAGE_SIZE> >::value ||
     //              spp_::is_same<allocator_type, libc_allocator<value_type> >::value)) >
     //        realloc_and_memmove_ok;
 
@@ -1853,14 +1853,14 @@ private:
     // spp::spp_allocator that can handle realloc_or_die.
     // -----------------------------------------------------------
     template <class A>
-    class alloc_impl<spp_::spp_allocator<A> > : public spp_::spp_allocator<A>
+    class alloc_impl<spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE> > : public spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE>
     {
     public:
-        typedef typename spp_::spp_allocator<A>::pointer pointer;
-        typedef typename spp_::spp_allocator<A>::size_type size_type;
+        typedef typename spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE>::pointer pointer;
+        typedef typename spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE>::size_type size_type;
 
-        explicit alloc_impl(const spp_::spp_allocator<A>& a)
-            : spp_::spp_allocator<A>(a)
+        explicit alloc_impl(const spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE>& a)
+            : spp_::spp_allocator<A, SPP_ALLOC_PAGE_SIZE>(a)
         { }
 
         pointer realloc_or_die(pointer ptr, size_type n)
