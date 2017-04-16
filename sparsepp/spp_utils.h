@@ -353,7 +353,7 @@ static inline uint32_t s_spp_popcount_default(uint64_t x) SPP_NOEXCEPT
 #else
     static inline uint32_t count_trailing_zeroes(size_t v) SPP_NOEXCEPT
     {
-        return s_spp_popcount_default((v & -v) - 1);
+        return s_spp_popcount_default((v & -(intptr_t)v) - 1);
     }
 
     static inline uint32_t s_popcount(size_t v) SPP_NOEXCEPT
@@ -420,7 +420,7 @@ public:
 
 // forward declaration
 // -------------------
-template<class T, size_t page_size = SPP_ALLOC_PAGE_SIZE>
+template<class T, size_t page_size>
 class spp_allocator;
 
 }
