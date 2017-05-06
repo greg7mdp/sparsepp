@@ -3927,6 +3927,7 @@ public:
     // ------
     iterator find(const key_type& key)                 { return rep.find(key); }
     const_iterator find(const key_type& key) const     { return rep.find(key); }
+    bool contains(const key_type& key) const           { return rep.find(key) != rep.end(); }
 
     mapped_type& operator[](const key_type& key)
     {
@@ -4305,6 +4306,7 @@ public:
     // Lookup
     // ------
     iterator find(const key_type& key) const     { return rep.find(key); }
+    bool contains(const key_type& key) const     { return rep.find(key) != rep.end(); }
 
     size_type count(const key_type& key) const   { return rep.count(key); }
 
