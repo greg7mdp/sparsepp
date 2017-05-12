@@ -229,7 +229,7 @@ This support is implemented in the following APIs:
     bool unserialize(Serializer serializer, INPUT *stream);
 ```
 
-The following example demontrates how a simple sparse_hash_map can be written to a file, and then read back. The serializer we use read and writes to a file using the stdio APIs, but it would be equally simple to write a serialized using the stream APIS:
+The following example demonstrates how a simple sparse_hash_map can be written to a file, and then read back. The serializer we use read and writes to a file using the stdio APIs, but it would be equally simple to write a serialized using the stream APIS:
 
 ```c++
 #include <cstdio>
@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
 
 ## Thread safety
 
-Sparsepp follows the trade safety rules of the Standard C++ library. In Particular:
+Sparsepp follows the thread safety rules of the Standard C++ library. In Particular:
 
 - A single sparsepp hash table is thread safe for reading from multiple threads. For example, given a hash table A, it is safe to read A from thread 1 and from thread 2 simultaneously.
 
