@@ -10,7 +10,7 @@
 
 #include <sparsepp/spp_timer.h>
 #include <sparsepp/spp_memory.h>
-#include <sparsepp/spp_alloc.h>
+#include <sparsepp/spp_dlalloc.h>
 
 using namespace std;
 
@@ -22,7 +22,7 @@ template <class T, class A>
 class TestAlloc
 {
 public:
-    TestAlloc(size_t num_alloc = 2000000) : 
+    TestAlloc(size_t num_alloc = 8000000) : 
         _num_alloc(num_alloc)
     {
         _allocated.resize(_num_alloc, nullptr);
@@ -55,7 +55,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] < j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
                     _check_buf(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -64,7 +64,7 @@ public:
         }
 #endif
 
-#if 1
+#if 0
         // test erase (shrinking the buffers)
         // ---------------------------------------------
         for (uint32_t j=28; j>4; j -= 2)
@@ -74,7 +74,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] > j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
                     _check_buf1(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -83,7 +83,7 @@ public:
         }
 #endif
 
-#if 1
+#if 0
         // and grow the buffers back to a max size of 24 each
         // --------------------------------------------------
         for (uint32_t j=4; j<26; j += 2)
@@ -93,7 +93,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] < j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
                     _check_buf(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -167,7 +167,7 @@ int main()
 #if 0
         TestAlloc< X, spp::libc_allocator<X> > test_alloc;
 #else
-        TestAlloc< X, spp::spp_allocator<X> > test_alloc;
+        TestAlloc< X, spp::spp_allocator<X> >  test_alloc;
 #endif
         test_alloc.run();
     }

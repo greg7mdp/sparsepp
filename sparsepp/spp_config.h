@@ -12,7 +12,7 @@
 #define spp_ SPP_NAMESPACE
 
 #ifndef SPP_DEFAULT_ALLOCATOR
-    #ifdef SPP_USE_SPP_ALLOC
+    #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) || defined(_WIN32)
         #define SPP_DEFAULT_ALLOCATOR spp_::spp_allocator
         #define SPP_INCLUDE_SPP_ALLOC
     #else
@@ -20,7 +20,7 @@
     #endif
 #endif
 
-#define SPP_ALLOC_PAGE_SIZE 2048
+#define SPP_ALLOC_PAGE_SIZE 512
 
 #ifndef SPP_GROUP_SIZE
     // must be 32 or 64
@@ -756,5 +756,19 @@
 #ifndef SPP_ATTRIBUTE_UNUSED
     #define SPP_ATTRIBUTE_UNUSED
 #endif
+
+/*
+  Try to persuade compilers to inline. 
+*/
+#ifndef SPP_FORCEINLINE
+    #if defined(__GNUC__)
+        #define SPP_FORCEINLINE __inline __attribute__ ((always_inline))
+    #elif defined(_MSC_VER)
+        #define SPP_FORCEINLINE __forceinline
+    #else
+        #define SPP_FORCEINLINE inline
+    #endif
+#endif
+
 
 #endif // spp_config_h_guard
