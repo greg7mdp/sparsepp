@@ -73,7 +73,7 @@ static const size_t spp_size_t_bitsize = sizeof(size_t) << 3;
 static const size_t spp_half_max_size_t = spp_max_size_t / 2U;
 static const size_t spp_chunk_align_mask = SPP_MALLOC_ALIGNMENT - 1;
 
-#if defined(DEBUG) || !defined(NDEBUG)
+#if defined(SPP_DEBUG) || !defined(NDEBUG)
 static bool spp_is_aligned(void *p) { return ((size_t)p & spp_chunk_align_mask) == 0; }
 #endif
 
@@ -184,7 +184,7 @@ static size_t align_offset(void *p)
     #include <errno.h>       /* for SPP_MALLOC_FAILURE_ACTION */
 #endif
 
-#ifdef DEBUG
+#ifdef SPP_DEBUG
     #if SPP_ABORT_ON_ASSERT_FAILURE
         #undef assert
         #define assert(x) if(!(x)) SPP_ABORT
@@ -195,7 +195,7 @@ static size_t align_offset(void *p)
     #ifndef assert
         #define assert(x)
     #endif
-    #define DEBUG 0
+    #define SPP_DEBUG 0
 #endif
 
 #if !defined(WIN32) && !defined(SPP_LACKS_TIME_H)
@@ -846,7 +846,8 @@ struct malloc_params
         if (!_magic)
             _init();
     }
-    int change(int param_number, int value);
+    
+    SPP_FORCEINLINE int change(int param_number, int value);
 
     size_t page_align(size_t sz)
     {
@@ -863,7 +864,7 @@ struct malloc_params
         return ((size_t)S & (_page_size - 1)) == 0;
     }
 
-    int _init();
+    SPP_FORCEINLINE int _init();
 
     size_t _magic;
     size_t _page_size;
@@ -974,24 +975,24 @@ public:
 
     /* ------------------------ ----------------------- */
 
-    void      init_top(mchunkptr p, size_t psize);
-    void      init_bins();
-    void      init(char* tbase, size_t tsize);
+    SPP_FORCEINLINE void      init_top(mchunkptr p, size_t psize);
+    SPP_FORCEINLINE void      init_bins();
+    SPP_FORCEINLINE void      init(char* tbase, size_t tsize);
 
     /* ------------------------ System alloc/dealloc -------------------------- */
-    void*     sys_alloc(size_t nb);
-    size_t    release_unused_segments();
-    int       sys_trim(size_t pad);
-    void      dispose_chunk(mchunkptr p, size_t psize);
+    SPP_FORCEINLINE void*     sys_alloc(size_t nb);
+    SPP_FORCEINLINE size_t    release_unused_segments();
+    SPP_FORCEINLINE int       sys_trim(size_t pad);
+    SPP_FORCEINLINE void      dispose_chunk(mchunkptr p, size_t psize);
 
     /* ----------------------- Internal support for realloc, memalign, etc --- */
-    mchunkptr try_realloc_chunk(mchunkptr p, size_t nb, int can_move);
-    void*     internal_memalign(size_t alignment, size_t bytes);
-    void**    ialloc(size_t n_elements, size_t* sizes, int opts, void* chunks[]);
-    size_t    internal_bulk_free(void* array[], size_t nelem);
-    void      internal_inspect_all(void(*handler)(void *start, void *end,
-                                   size_t used_bytes, void* callback_arg),
-                                   void* arg);
+    SPP_FORCEINLINE mchunkptr try_realloc_chunk(mchunkptr p, size_t nb, int can_move);
+    SPP_FORCEINLINE void*     internal_memalign(size_t alignment, size_t bytes);
+    SPP_FORCEINLINE void**    ialloc(size_t n_elements, size_t* sizes, int opts, void* chunks[]);
+    SPP_FORCEINLINE size_t    internal_bulk_free(void* array[], size_t nelem);
+    SPP_FORCEINLINE void      internal_inspect_all(void(*handler)(void *start, void *end,
+                                                                  size_t used_bytes, void* callback_arg),
+                                                   void* arg);
 
     /* -------------------------- system alloc setup (Operations on mflags) ----- */
     bool      use_lock() const { return false; }
@@ -1060,12 +1061,12 @@ public:
     static bool rtcheck(bool e)       { return e; }
   #endif
 #else
-    static bool ok_address(void *a)       { return true; }
-    static bool ok_next(void *p, void *n) { return true; }
-    static bool ok_inuse(mchunkptr p)     { return true; }
-    static bool ok_pinuse(mchunkptr p)    { return true; }
-    static bool ok_magic()                { return true; }
-    static bool rtcheck(bool e)           { return true; }
+    static bool ok_address(void *)       { return true; }
+    static bool ok_next(void *, void *)  { return true; }
+    static bool ok_inuse(mchunkptr)      { return true; }
+    static bool ok_pinuse(mchunkptr)     { return true; }
+    static bool ok_magic()               { return true; }
+    static bool rtcheck(bool)            { return true; }
 #endif
 
     bool is_initialized() const           { return _top != 0; }
@@ -1103,14 +1104,14 @@ public:
 
     /* -------------------------- Debugging setup ---------------------------- */
 
-#if ! DEBUG
+#if ! SPP_DEBUG
     void check_free_chunk(mchunkptr) {}
     void check_inuse_chunk(mchunkptr) {}
     void check_malloced_chunk(void*, size_t) {}
     void check_mmapped_chunk(mchunkptr) {}
     void check_malloc_state() {}
     void check_top_chunk(mchunkptr) {}
-#else /* DEBUG */
+#else /* SPP_DEBUG */
     void check_free_chunk(mchunkptr p)       { do_check_free_chunk(p); }
     void check_inuse_chunk(mchunkptr p)      { do_check_inuse_chunk(p); }
     void check_malloced_chunk(void* p, size_t s) { do_check_malloced_chunk(p, s); }
@@ -1326,16 +1327,16 @@ private:
     SPP_FORCEINLINE void unlink_chunk(mchunkptr P, size_t S);
 
     /* -----------------------  Direct-mmapping chunks ----------------------- */
-    void*     mmap_alloc(size_t nb);
-    mchunkptr mmap_resize(mchunkptr oldp, size_t nb, int flags);
+    SPP_FORCEINLINE void*     mmap_alloc(size_t nb);
+    SPP_FORCEINLINE mchunkptr mmap_resize(mchunkptr oldp, size_t nb, int flags);
 
-    void      reset_on_error();
-    void*     prepend_alloc(char* newbase, char* oldbase, size_t nb);
-    void      add_segment(char* tbase, size_t tsize, flag_t mmapped);
+    SPP_FORCEINLINE void      reset_on_error();
+    SPP_FORCEINLINE void*     prepend_alloc(char* newbase, char* oldbase, size_t nb);
+    SPP_FORCEINLINE void      add_segment(char* tbase, size_t tsize, flag_t mmapped);
 
     /* ------------------------ malloc --------------------------- */
-    void*     tmalloc_large(size_t nb);
-    void*     tmalloc_small(size_t nb);
+    SPP_FORCEINLINE void*     tmalloc_large(size_t nb);
+    SPP_FORCEINLINE void*     tmalloc_small(size_t nb);
 
     /* ------------------------Bin types, widths and sizes -------- */
     static const size_t NSMALLBINS      = 32;
@@ -1378,7 +1379,7 @@ typedef malloc_state*    mstate;
 /* ------------- end malloc_state ------------------- */
 
 #if SPP_FOOTERS
-malloc_state* get_mstate_for(malloc_chunk_header *p)
+static malloc_state* get_mstate_for(malloc_chunk_header *p)
 {
     return (malloc_state*)(((mchunkptr)((char*)(p) +
                                         (p->chunksize())))->prev_foot ^ mparams._magic);
@@ -1397,7 +1398,7 @@ malloc_state* get_mstate_for(malloc_chunk_header *p)
 #endif
 
 //  True if segment S holds address A
-bool segment_holds(msegmentptr S, mchunkptr A)
+static bool segment_holds(msegmentptr S, mchunkptr A)
 {
     return (char*)A >= S->_base && (char*)A < S->_base + S->_size;
 }
@@ -1547,7 +1548,7 @@ int malloc_params::change(int param_number, int value)
     }
 }
 
-#if DEBUG
+#if SPP_DEBUG
 /* ------------------------- Debugging Support --------------------------- */
 
 // Check properties of any chunk, whether free, inuse, mmapped etc
@@ -1854,7 +1855,7 @@ void malloc_state::do_check_malloc_state()
     assert(total <= _footprint);
     assert(_footprint <= _max_footprint);
 }
-#endif // DEBUG
+#endif // SPP_DEBUG
 
 /* ----------------------- Operations on smallbins ----------------------- */
 
@@ -3354,7 +3355,7 @@ void** malloc_state::ialloc(size_t n_elements, size_t* sizes, int opts,
         }
     }
 
-#if DEBUG
+#if SPP_DEBUG
     if (marray != chunks)
     {
         // final element must have exactly exhausted chunk
@@ -3506,7 +3507,7 @@ static mstate init_user_mstate(char* tbase, size_t tsize)
     return m;
 }
 
-mspace create_mspace(size_t capacity, int locked)
+static mspace create_mspace(size_t capacity, int locked)
 {
     mstate m = 0;
     size_t msize;
@@ -3528,7 +3529,7 @@ mspace create_mspace(size_t capacity, int locked)
     return (mspace)m;
 }
 
-size_t destroy_mspace(mspace msp)
+static size_t destroy_mspace(mspace msp)
 {
     size_t freed = 0;
     mstate ms = (mstate)msp;
@@ -3553,7 +3554,7 @@ size_t destroy_mspace(mspace msp)
 }
 
 /* ----------------------------  mspace versions of malloc/calloc/free routines -------------------- */
-void* mspace_malloc(mspace msp, size_t bytes)
+static void* mspace_malloc(mspace msp, size_t bytes)
 {
     mstate ms = (mstate)msp;
     if (!ms->ok_magic())
@@ -3564,7 +3565,7 @@ void* mspace_malloc(mspace msp, size_t bytes)
     return ms->_malloc(bytes);
 }
 
-void mspace_free(mspace msp, void* mem)
+static void mspace_free(mspace msp, void* mem)
 {
     if (mem != 0)
     {
@@ -3584,7 +3585,7 @@ void mspace_free(mspace msp, void* mem)
     }
 }
 
-void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
+static void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
 {
     void* mem;
     size_t req = 0;
@@ -3607,7 +3608,7 @@ void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
     return mem;
 }
 
-void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
+static void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
 {
     void* mem = 0;
     if (oldmem == 0)
@@ -3657,7 +3658,7 @@ void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
 
 #if 0
 
-mspace create_mspace_with_base(void* base, size_t capacity, int locked)
+static mspace create_mspace_with_base(void* base, size_t capacity, int locked)
 {
     mstate m = 0;
     size_t msize;
@@ -3673,7 +3674,7 @@ mspace create_mspace_with_base(void* base, size_t capacity, int locked)
     return (mspace)m;
 }
 
-int mspace_track_large_chunks(mspace msp, int enable)
+static int mspace_track_large_chunks(mspace msp, int enable)
 {
     int ret = 0;
     mstate ms = (mstate)msp;
@@ -3689,7 +3690,7 @@ int mspace_track_large_chunks(mspace msp, int enable)
     return ret;
 }
 
-void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
+static void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
 {
     void* mem = 0;
     if (oldmem != 0)
@@ -3725,7 +3726,7 @@ void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
     return mem;
 }
 
-void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
+static void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
 {
     mstate ms = (mstate)msp;
     if (!ms->ok_magic())
@@ -3738,8 +3739,8 @@ void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
     return ms->internal_memalign(alignment, bytes);
 }
 
-void** mspace_independent_calloc(mspace msp, size_t n_elements,
-                                 size_t elem_size, void* chunks[])
+static void** mspace_independent_calloc(mspace msp, size_t n_elements,
+                                        size_t elem_size, void* chunks[])
 {
     size_t sz = elem_size; // serves as 1-element array
     mstate ms = (mstate)msp;
@@ -3751,8 +3752,8 @@ void** mspace_independent_calloc(mspace msp, size_t n_elements,
     return ms->ialloc(n_elements, &sz, 3, chunks);
 }
 
-void** mspace_independent_comalloc(mspace msp, size_t n_elements,
-                                   size_t sizes[], void* chunks[])
+static void** mspace_independent_comalloc(mspace msp, size_t n_elements,
+                                          size_t sizes[], void* chunks[])
 {
     mstate ms = (mstate)msp;
     if (!ms->ok_magic())
@@ -3765,18 +3766,18 @@ void** mspace_independent_comalloc(mspace msp, size_t n_elements,
 
 #endif
 
-size_t mspace_bulk_free(mspace msp, void* array[], size_t nelem)
+static size_t mspace_bulk_free(mspace msp, void* array[], size_t nelem)
 {
     return ((mstate)msp)->internal_bulk_free(array, nelem);
 }
 
 #if SPP_MALLOC_INSPECT_ALL
-void mspace_inspect_all(mspace msp,
-                        void(*handler)(void *start,
-                                       void *end,
-                                       size_t used_bytes,
-                                       void* callback_arg),
-                        void* arg)
+static void mspace_inspect_all(mspace msp,
+                               void(*handler)(void *start,
+                                              void *end,
+                                              size_t used_bytes,
+                                              void* callback_arg),
+                               void* arg)
 {
     mstate ms = (mstate)msp;
     if (ms->ok_magic())
@@ -3786,7 +3787,7 @@ void mspace_inspect_all(mspace msp,
 }
 #endif
 
-int mspace_trim(mspace msp, size_t pad)
+static int mspace_trim(mspace msp, size_t pad)
 {
     int result = 0;
     mstate ms = (mstate)msp;
@@ -3797,7 +3798,7 @@ int mspace_trim(mspace msp, size_t pad)
     return result;
 }
 
-size_t mspace_footprint(mspace msp)
+static size_t mspace_footprint(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3808,7 +3809,7 @@ size_t mspace_footprint(mspace msp)
     return result;
 }
 
-size_t mspace_max_footprint(mspace msp)
+static size_t mspace_max_footprint(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3819,7 +3820,7 @@ size_t mspace_max_footprint(mspace msp)
     return result;
 }
 
-size_t mspace_footprint_limit(mspace msp)
+static size_t mspace_footprint_limit(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3833,7 +3834,7 @@ size_t mspace_footprint_limit(mspace msp)
     return result;
 }
 
-size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
+static size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3852,7 +3853,7 @@ size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
     return result;
 }
 
-size_t mspace_usable_size(const void* mem)
+static size_t mspace_usable_size(const void* mem)
 {
     if (mem != 0)
     {
@@ -3863,7 +3864,7 @@ size_t mspace_usable_size(const void* mem)
     return 0;
 }
 
-int mspace_mallopt(int param_number, int value)
+static int mspace_mallopt(int param_number, int value)
 {
     return mparams.change(param_number, value);
 }
