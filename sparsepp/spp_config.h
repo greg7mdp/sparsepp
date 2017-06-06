@@ -9,7 +9,9 @@
      #define SPP_NAMESPACE spp
 #endif
 
-#define spp_ SPP_NAMESPACE
+#ifndef spp_
+    #define spp_ SPP_NAMESPACE
+#endif
 
 #ifndef SPP_DEFAULT_ALLOCATOR
     #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) || defined(_WIN32)
