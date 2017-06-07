@@ -6,6 +6,198 @@
    see: http://g.oswego.edu/dl/html/malloc.html
 */
 
+#include <sparsepp/spp_utils.h>
+#include <sparsepp/spp_smartptr.h>
+
+
+#ifndef SPP_FORCEINLINE
+    #if defined(__GNUC__)
+        #define SPP_FORCEINLINE __inline __attribute__ ((always_inline))
+    #elif defined(_MSC_VER)
+        #define SPP_FORCEINLINE __forceinline
+    #else
+        #define SPP_FORCEINLINE inline
+    #endif
+#endif
+
+
+#ifndef SPP_IMPL
+    #define SPP_IMPL SPP_FORCEINLINE
+#endif
+
+#ifndef SPP_API
+    #define SPP_API  static
+#endif
+
+
+namespace spp
+{
+    // ---------------------- allocator internal API -----------------------
+    typedef void* mspace;
+
+    /*
+      create_mspace creates and returns a new independent space with the
+      given initial capacity, or, if 0, the default granularity size.  It
+      returns null if there is no system memory available to create the
+      space.  If argument locked is non-zero, the space uses a separate
+      lock to control access. The capacity of the space will grow
+      dynamically as needed to service mspace_malloc requests.  You can
+      control the sizes of incremental increases of this space by
+      compiling with a different SPP_DEFAULT_GRANULARITY or dynamically
+      setting with mallopt(M_GRANULARITY, value).
+    */
+    SPP_API mspace create_mspace(size_t capacity, int locked);
+    SPP_API size_t destroy_mspace(mspace msp);
+    SPP_API void*  mspace_malloc(mspace msp, size_t bytes);
+    SPP_API void   mspace_free(mspace msp, void* mem);
+    SPP_API void*  mspace_realloc(mspace msp, void* mem, size_t newsize);
+
+#if 0
+    SPP_API mspace create_mspace_with_base(void* base, size_t capacity, int locked);
+    SPP_API int    mspace_track_large_chunks(mspace msp, int enable);
+    SPP_API void*  mspace_calloc(mspace msp, size_t n_elements, size_t elem_size);
+    SPP_API void*  mspace_memalign(mspace msp, size_t alignment, size_t bytes);
+    SPP_API void** mspace_independent_calloc(mspace msp, size_t n_elements,
+                                             size_t elem_size, void* chunks[]);
+    SPP_API void** mspace_independent_comalloc(mspace msp, size_t n_elements,
+                                               size_t sizes[], void* chunks[]);
+    SPP_API size_t mspace_footprint(mspace msp);
+    SPP_API size_t mspace_max_footprint(mspace msp);
+    SPP_API size_t mspace_usable_size(const void* mem);
+    SPP_API int    mspace_trim(mspace msp, size_t pad);
+    SPP_API int    mspace_mallopt(int, int);
+#endif
+
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    template<class T>
+    class spp_allocator
+    {
+    public:
+        typedef T         value_type;
+        typedef T*        pointer;
+        typedef ptrdiff_t difference_type;
+        typedef const T*  const_pointer;
+        typedef size_t    size_type;
+
+        spp_allocator() : _space(new MSpace) {}
+
+        void swap(spp_allocator &o)
+        {
+            std::swap(_space, o._space);
+        }
+
+        pointer allocate(size_t n, const_pointer  /* unused */ = 0)
+        {
+            pointer res = static_cast<pointer>(mspace_malloc(_space->_sp, n * sizeof(T)));
+            if (!res)
+                throw std::bad_alloc();
+            return res;
+        }
+
+        void deallocate(pointer p, size_t /* unused */)
+        {
+            mspace_free(_space->_sp, p);
+        }
+
+        pointer reallocate(pointer p, size_t new_size)
+        {
+            pointer res = static_cast<pointer>(mspace_realloc(_space->_sp, p, new_size * sizeof(T)));
+            if (!res)
+                throw std::bad_alloc();
+            return res;
+        }
+
+        size_type max_size() const
+        {
+            return static_cast<size_type>(-1) / sizeof(value_type);
+        }
+
+        void construct(pointer p, const value_type& val)
+        {
+            new (p) value_type(val);
+        }
+
+        void destroy(pointer p) { p->~value_type(); }
+
+        template<class U>
+        struct rebind
+        {
+            // rebind to libc_allocator because we want to use malloc_inspect_all in destructive_iterator 
+            // to reduce peak memory usage (we don't want <group_items> mixed with value_type when 
+            // we traverse the allocated memory).
+            typedef spp::spp_allocator<U> other;
+        };
+
+        mspace space() const { return _space->_sp; }
+
+        // check if we can clear the whole allocator memory at once => works only if the allocator 
+        // is not be shared. If can_clear() returns true, we expect that the next allocator call
+        // will be clear() - not allocate() or deallocate()
+        bool can_clear()
+        {
+            assert(!_space_to_clear);
+            _space_to_clear.reset();
+            _space_to_clear.swap(_space);
+            if (_space_to_clear->count() == 1)
+                return true;
+            else
+                _space_to_clear.swap(_space);
+            return false;
+        }
+
+        void clear()
+        {
+            assert(!_space && _space_to_clear);
+            _space_to_clear.reset();
+            _space = new MSpace;
+        }
+        
+    private:
+        struct MSpace : public spp_rc
+        {
+            MSpace() :
+                _sp(create_mspace(0, 0))
+            {}
+
+            ~MSpace()
+            {
+                destroy_mspace(_sp);
+            }
+
+            mspace _sp;
+        };
+
+        spp_sptr<MSpace> _space;
+        spp_sptr<MSpace> _space_to_clear;
+    };
+}
+
+
+// allocators are "equal" whenever memory allocated with one can be deallocated with the other
+template<class T>
+inline bool operator==(const spp_::spp_allocator<T> &a, const spp_::spp_allocator<T> &b)
+{
+    return a.space() == b.space();
+}
+
+template<class T>
+inline bool operator!=(const spp_::spp_allocator<T> &a, const spp_::spp_allocator<T> &b)
+{
+    return !(a == b);
+}
+
+namespace std
+{
+    template <class T>
+    inline void swap(spp_::spp_allocator<T> &a, spp_::spp_allocator<T> &b)
+    {
+        a.swap(b);
+    }
+}
+
+#if !defined(SPP_EXCLUDE_IMPLEMENTATION)
+
 #ifndef WIN32
     #ifdef _WIN32
         #define WIN32 1
@@ -51,16 +243,6 @@
 
 #ifndef SPP_LACKS_SYS_TYPES_H
     #include <sys/types.h>  /* For size_t */
-#endif
-
-#ifndef SPP_FORCEINLINE
-    #if defined(__GNUC__)
-        #define SPP_FORCEINLINE __inline __attribute__ ((always_inline))
-    #elif defined(_MSC_VER)
-        #define SPP_FORCEINLINE __forceinline
-    #else
-        #define SPP_FORCEINLINE inline
-    #endif
 #endif
 
 #ifndef SPP_MALLOC_ALIGNMENT
@@ -244,42 +426,6 @@ static size_t align_offset(void *p)
 
 namespace spp
 {
-
-typedef void* mspace;
-
-/*
-  create_mspace creates and returns a new independent space with the
-  given initial capacity, or, if 0, the default granularity size.  It
-  returns null if there is no system memory available to create the
-  space.  If argument locked is non-zero, the space uses a separate
-  lock to control access. The capacity of the space will grow
-  dynamically as needed to service mspace_malloc requests.  You can
-  control the sizes of incremental increases of this space by
-  compiling with a different SPP_DEFAULT_GRANULARITY or dynamically
-  setting with mallopt(M_GRANULARITY, value).
-*/
-static mspace create_mspace(size_t capacity, int locked);
-static size_t destroy_mspace(mspace msp);
-static void*  mspace_malloc(mspace msp, size_t bytes);
-static void   mspace_free(mspace msp, void* mem);
-static void*  mspace_realloc(mspace msp, void* mem, size_t newsize);
-
-#if 0
-    static mspace create_mspace_with_base(void* base, size_t capacity, int locked);
-    static int    mspace_track_large_chunks(mspace msp, int enable);
-    static void*  mspace_calloc(mspace msp, size_t n_elements, size_t elem_size);
-    static void*  mspace_memalign(mspace msp, size_t alignment, size_t bytes);
-    static void** mspace_independent_calloc(mspace msp, size_t n_elements,
-                                            size_t elem_size, void* chunks[]);
-    static void** mspace_independent_comalloc(mspace msp, size_t n_elements,
-            size_t sizes[], void* chunks[]);
-    static size_t mspace_footprint(mspace msp);
-    static size_t mspace_max_footprint(mspace msp);
-    static size_t mspace_usable_size(const void* mem);
-    static int    mspace_trim(mspace msp, size_t pad);
-    static int    mspace_mallopt(int, int);
-#endif
-
 
 /* Declarations for bit scanning on win32 */
 #if defined(_MSC_VER) && _MSC_VER>=1300
@@ -847,7 +993,7 @@ struct malloc_params
             _init();
     }
     
-    SPP_FORCEINLINE int change(int param_number, int value);
+    SPP_IMPL int change(int param_number, int value);
 
     size_t page_align(size_t sz)
     {
@@ -864,7 +1010,7 @@ struct malloc_params
         return ((size_t)S & (_page_size - 1)) == 0;
     }
 
-    SPP_FORCEINLINE int _init();
+    SPP_IMPL int _init();
 
     size_t _magic;
     size_t _page_size;
@@ -975,24 +1121,24 @@ public:
 
     /* ------------------------ ----------------------- */
 
-    SPP_FORCEINLINE void      init_top(mchunkptr p, size_t psize);
-    SPP_FORCEINLINE void      init_bins();
-    SPP_FORCEINLINE void      init(char* tbase, size_t tsize);
+    SPP_IMPL void      init_top(mchunkptr p, size_t psize);
+    SPP_IMPL void      init_bins();
+    SPP_IMPL void      init(char* tbase, size_t tsize);
 
     /* ------------------------ System alloc/dealloc -------------------------- */
-    SPP_FORCEINLINE void*     sys_alloc(size_t nb);
-    SPP_FORCEINLINE size_t    release_unused_segments();
-    SPP_FORCEINLINE int       sys_trim(size_t pad);
-    SPP_FORCEINLINE void      dispose_chunk(mchunkptr p, size_t psize);
+    SPP_IMPL void*     sys_alloc(size_t nb);
+    SPP_IMPL size_t    release_unused_segments();
+    SPP_IMPL int       sys_trim(size_t pad);
+    SPP_IMPL void      dispose_chunk(mchunkptr p, size_t psize);
 
     /* ----------------------- Internal support for realloc, memalign, etc --- */
-    SPP_FORCEINLINE mchunkptr try_realloc_chunk(mchunkptr p, size_t nb, int can_move);
-    SPP_FORCEINLINE void*     internal_memalign(size_t alignment, size_t bytes);
-    SPP_FORCEINLINE void**    ialloc(size_t n_elements, size_t* sizes, int opts, void* chunks[]);
-    SPP_FORCEINLINE size_t    internal_bulk_free(void* array[], size_t nelem);
-    SPP_FORCEINLINE void      internal_inspect_all(void(*handler)(void *start, void *end,
-                                                                  size_t used_bytes, void* callback_arg),
-                                                   void* arg);
+    SPP_IMPL mchunkptr try_realloc_chunk(mchunkptr p, size_t nb, int can_move);
+    SPP_IMPL void*     internal_memalign(size_t alignment, size_t bytes);
+    SPP_IMPL void**    ialloc(size_t n_elements, size_t* sizes, int opts, void* chunks[]);
+    SPP_IMPL size_t    internal_bulk_free(void* array[], size_t nelem);
+    SPP_IMPL void      internal_inspect_all(void(*handler)(void *start, void *end,
+                                                           size_t used_bytes, void* callback_arg),
+                                            void* arg);
 
     /* -------------------------- system alloc setup (Operations on mflags) ----- */
     bool      use_lock() const { return false; }
@@ -1327,16 +1473,16 @@ private:
     SPP_FORCEINLINE void unlink_chunk(mchunkptr P, size_t S);
 
     /* -----------------------  Direct-mmapping chunks ----------------------- */
-    SPP_FORCEINLINE void*     mmap_alloc(size_t nb);
-    SPP_FORCEINLINE mchunkptr mmap_resize(mchunkptr oldp, size_t nb, int flags);
+    SPP_IMPL void*       mmap_alloc(size_t nb);
+    SPP_IMPL mchunkptr   mmap_resize(mchunkptr oldp, size_t nb, int flags);
 
-    SPP_FORCEINLINE void      reset_on_error();
-    SPP_FORCEINLINE void*     prepend_alloc(char* newbase, char* oldbase, size_t nb);
-    SPP_FORCEINLINE void      add_segment(char* tbase, size_t tsize, flag_t mmapped);
+    SPP_IMPL void        reset_on_error();
+    SPP_IMPL void*       prepend_alloc(char* newbase, char* oldbase, size_t nb);
+    SPP_IMPL void        add_segment(char* tbase, size_t tsize, flag_t mmapped);
 
     /* ------------------------ malloc --------------------------- */
-    SPP_FORCEINLINE void*     tmalloc_large(size_t nb);
-    SPP_FORCEINLINE void*     tmalloc_small(size_t nb);
+    SPP_IMPL void*       tmalloc_large(size_t nb);
+    SPP_IMPL void*       tmalloc_small(size_t nb);
 
     /* ------------------------Bin types, widths and sizes -------- */
     static const size_t NSMALLBINS      = 32;
@@ -3507,7 +3653,7 @@ static mstate init_user_mstate(char* tbase, size_t tsize)
     return m;
 }
 
-static mspace create_mspace(size_t capacity, int locked)
+SPP_API mspace create_mspace(size_t capacity, int locked)
 {
     mstate m = 0;
     size_t msize;
@@ -3529,7 +3675,7 @@ static mspace create_mspace(size_t capacity, int locked)
     return (mspace)m;
 }
 
-static size_t destroy_mspace(mspace msp)
+SPP_API size_t destroy_mspace(mspace msp)
 {
     size_t freed = 0;
     mstate ms = (mstate)msp;
@@ -3554,7 +3700,7 @@ static size_t destroy_mspace(mspace msp)
 }
 
 /* ----------------------------  mspace versions of malloc/calloc/free routines -------------------- */
-static void* mspace_malloc(mspace msp, size_t bytes)
+SPP_API void* mspace_malloc(mspace msp, size_t bytes)
 {
     mstate ms = (mstate)msp;
     if (!ms->ok_magic())
@@ -3565,7 +3711,7 @@ static void* mspace_malloc(mspace msp, size_t bytes)
     return ms->_malloc(bytes);
 }
 
-static void mspace_free(mspace msp, void* mem)
+SPP_API void mspace_free(mspace msp, void* mem)
 {
     if (mem != 0)
     {
@@ -3585,7 +3731,7 @@ static void mspace_free(mspace msp, void* mem)
     }
 }
 
-static void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
+SPP_API void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
 {
     void* mem;
     size_t req = 0;
@@ -3608,7 +3754,7 @@ static void* mspace_calloc(mspace msp, size_t n_elements, size_t elem_size)
     return mem;
 }
 
-static void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
+SPP_API void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
 {
     void* mem = 0;
     if (oldmem == 0)
@@ -3658,7 +3804,7 @@ static void* mspace_realloc(mspace msp, void* oldmem, size_t bytes)
 
 #if 0
 
-static mspace create_mspace_with_base(void* base, size_t capacity, int locked)
+SPP_API mspace create_mspace_with_base(void* base, size_t capacity, int locked)
 {
     mstate m = 0;
     size_t msize;
@@ -3674,7 +3820,7 @@ static mspace create_mspace_with_base(void* base, size_t capacity, int locked)
     return (mspace)m;
 }
 
-static int mspace_track_large_chunks(mspace msp, int enable)
+SPP_API int mspace_track_large_chunks(mspace msp, int enable)
 {
     int ret = 0;
     mstate ms = (mstate)msp;
@@ -3690,7 +3836,7 @@ static int mspace_track_large_chunks(mspace msp, int enable)
     return ret;
 }
 
-static void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
+SPP_API void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
 {
     void* mem = 0;
     if (oldmem != 0)
@@ -3726,7 +3872,7 @@ static void* mspace_realloc_in_place(mspace msp, void* oldmem, size_t bytes)
     return mem;
 }
 
-static void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
+SPP_API void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
 {
     mstate ms = (mstate)msp;
     if (!ms->ok_magic())
@@ -3739,7 +3885,7 @@ static void* mspace_memalign(mspace msp, size_t alignment, size_t bytes)
     return ms->internal_memalign(alignment, bytes);
 }
 
-static void** mspace_independent_calloc(mspace msp, size_t n_elements,
+SPP_API void** mspace_independent_calloc(mspace msp, size_t n_elements,
                                         size_t elem_size, void* chunks[])
 {
     size_t sz = elem_size; // serves as 1-element array
@@ -3752,7 +3898,7 @@ static void** mspace_independent_calloc(mspace msp, size_t n_elements,
     return ms->ialloc(n_elements, &sz, 3, chunks);
 }
 
-static void** mspace_independent_comalloc(mspace msp, size_t n_elements,
+SPP_API void** mspace_independent_comalloc(mspace msp, size_t n_elements,
                                           size_t sizes[], void* chunks[])
 {
     mstate ms = (mstate)msp;
@@ -3766,18 +3912,18 @@ static void** mspace_independent_comalloc(mspace msp, size_t n_elements,
 
 #endif
 
-static size_t mspace_bulk_free(mspace msp, void* array[], size_t nelem)
+SPP_API size_t mspace_bulk_free(mspace msp, void* array[], size_t nelem)
 {
     return ((mstate)msp)->internal_bulk_free(array, nelem);
 }
 
 #if SPP_MALLOC_INSPECT_ALL
-static void mspace_inspect_all(mspace msp,
-                               void(*handler)(void *start,
-                                              void *end,
-                                              size_t used_bytes,
-                                              void* callback_arg),
-                               void* arg)
+SPP_API void mspace_inspect_all(mspace msp,
+                                void(*handler)(void *start,
+                                               void *end,
+                                               size_t used_bytes,
+                                               void* callback_arg),
+                                void* arg)
 {
     mstate ms = (mstate)msp;
     if (ms->ok_magic())
@@ -3787,7 +3933,7 @@ static void mspace_inspect_all(mspace msp,
 }
 #endif
 
-static int mspace_trim(mspace msp, size_t pad)
+SPP_API int mspace_trim(mspace msp, size_t pad)
 {
     int result = 0;
     mstate ms = (mstate)msp;
@@ -3798,7 +3944,7 @@ static int mspace_trim(mspace msp, size_t pad)
     return result;
 }
 
-static size_t mspace_footprint(mspace msp)
+SPP_API size_t mspace_footprint(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3809,7 +3955,7 @@ static size_t mspace_footprint(mspace msp)
     return result;
 }
 
-static size_t mspace_max_footprint(mspace msp)
+SPP_API size_t mspace_max_footprint(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3820,7 +3966,7 @@ static size_t mspace_max_footprint(mspace msp)
     return result;
 }
 
-static size_t mspace_footprint_limit(mspace msp)
+SPP_API size_t mspace_footprint_limit(mspace msp)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3834,7 +3980,7 @@ static size_t mspace_footprint_limit(mspace msp)
     return result;
 }
 
-static size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
+SPP_API size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
 {
     size_t result = 0;
     mstate ms = (mstate)msp;
@@ -3853,7 +3999,7 @@ static size_t mspace_set_footprint_limit(mspace msp, size_t bytes)
     return result;
 }
 
-static size_t mspace_usable_size(const void* mem)
+SPP_API size_t mspace_usable_size(const void* mem)
 {
     if (mem != 0)
     {
@@ -3864,148 +4010,14 @@ static size_t mspace_usable_size(const void* mem)
     return 0;
 }
 
-static int mspace_mallopt(int param_number, int value)
+SPP_API int mspace_mallopt(int param_number, int value)
 {
     return mparams.change(param_number, value);
 }
 
-}
-
-#include <sparsepp/spp_utils.h>
-#include <sparsepp/spp_smartptr.h>
-
-namespace spp
-{
-
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-template<class T>
-class spp_allocator
-{
-public:
-    typedef T         value_type;
-    typedef T*        pointer;
-    typedef ptrdiff_t difference_type;
-    typedef const T*  const_pointer;
-    typedef size_t    size_type;
-
-    spp_allocator() : _space(new MSpace) {}
-
-    void swap(spp_allocator &o)
-    {
-        std::swap(_space, o._space);
-    }
-
-    pointer allocate(size_t n, const_pointer  /* unused */ = 0)
-    {
-        pointer res = static_cast<pointer>(mspace_malloc(_space->_sp, n * sizeof(T)));
-        if (!res)
-            throw std::bad_alloc();
-        return res;
-    }
-
-    void deallocate(pointer p, size_t /* unused */)
-    {
-        mspace_free(_space->_sp, p);
-    }
-
-    pointer reallocate(pointer p, size_t new_size)
-    {
-        pointer res = static_cast<pointer>(mspace_realloc(_space->_sp, p, new_size * sizeof(T)));
-        if (!res)
-            throw std::bad_alloc();
-        return res;
-    }
-
-    size_type max_size() const
-    {
-        return static_cast<size_type>(-1) / sizeof(value_type);
-    }
-
-    void construct(pointer p, const value_type& val)
-    {
-        new (p) value_type(val);
-    }
-
-    void destroy(pointer p) { p->~value_type(); }
-
-    template<class U>
-    struct rebind
-    {
-        // rebind to libc_allocator because we want to use malloc_inspect_all in destructive_iterator 
-        // to reduce peak memory usage (we don't want <group_items> mixed with value_type when 
-        // we traverse the allocated memory).
-        typedef spp::spp_allocator<U> other;
-    };
-
-    mspace space() const { return _space->_sp; }
-
-    // check if we can clear the whole allocator memory at once => works only if the allocator 
-    // is not be shared. If can_clear() returns true, we expect that the next allocator call
-    // will be clear() - not allocate() or deallocate()
-    bool can_clear()
-    {
-        assert(!_space_to_clear);
-        _space_to_clear.reset();
-        _space_to_clear.swap(_space);
-        if (_space_to_clear->count() == 1)
-            return true;
-        else
-            _space_to_clear.swap(_space);
-        return false;
-    }
-
-    void clear()
-    {
-        assert(!_space && _space_to_clear);
-        _space_to_clear.reset();
-        _space = new MSpace;
-    }
-        
-private:
-    struct MSpace : public spp_rc
-    {
-        MSpace() :
-            _sp(create_mspace(0, 0))
-        {}
-
-        ~MSpace()
-        {
-            destroy_mspace(_sp);
-        }
-
-        mspace _sp;
-    };
-
-    spp_sptr<MSpace> _space;
-    spp_sptr<MSpace> _space_to_clear;
-};
-
-
 } // spp_ namespace
 
 
-// allocators are "equal" whenever memory allocated with one can be deallocated with the other
-template<class T>
-inline bool operator==(const spp_::spp_allocator<T> &a, const spp_::spp_allocator<T> &b)
-{
-    return a.space() == b.space();
-}
-
-template<class T>
-inline bool operator!=(const spp_::spp_allocator<T> &a, const spp_::spp_allocator<T> &b)
-{
-    return !(a == b);
-}
-
-namespace std
-{
-template <class T>
-inline void swap(spp_::spp_allocator<T> &a, spp_::spp_allocator<T> &b)
-{
-    a.swap(b);
-}
-}
-
+#endif // SPP_EXCLUDE_IMPLEMENTATION
 
 #endif // spp_dlalloc__h_

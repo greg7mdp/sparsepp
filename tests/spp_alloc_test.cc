@@ -32,6 +32,8 @@ public:
 
     void run()
     {
+        srand(43); // always same sequence of random numbers
+
         for (size_t i=0; i<_num_alloc; ++i)
             _sizes[i] = std::max(2, (rand() % 5) * 2);
                                  
@@ -159,17 +161,29 @@ private:
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
+template <class X, class A>
+void run_test(const char *alloc_name)
+{
+    printf("\n---------------- testing %s\n\n", alloc_name);
+
+    printf("\nmem usage before the alloc test: %4.1f\n", 
+           _to_mb(spp::GetProcessMemoryUsed()));
+    {
+        TestAlloc< X, A >  test_alloc;
+        test_alloc.run();
+    }
+    printf("mem usage after the alloc test: %4.1f\n",
+           _to_mb(spp::GetProcessMemoryUsed()));
+
+    printf("\n\n");
+}
+
+// -----------------------------------------------------------
+// -----------------------------------------------------------
 int main()
 {
     typedef uint64_t X;
-    printf("\nmem usage before the alloc test: %4.1f\n", _to_mb(spp::GetProcessMemoryUsed()));
-    {
-#if 0
-        TestAlloc< X, spp::libc_allocator<X> > test_alloc;
-#else
-        TestAlloc< X, spp::spp_allocator<X> >  test_alloc;
-#endif
-        test_alloc.run();
-    }
-    printf("mem usage after the alloc test: %4.1f\n", _to_mb(spp::GetProcessMemoryUsed()));
+
+    run_test<X, spp::libc_allocator<X>>("libc_allocator");
+    run_test<X, spp::spp_allocator<X>>("spp_allocator");
 }
