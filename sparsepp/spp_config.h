@@ -14,7 +14,14 @@
 #endif
 
 #ifndef SPP_DEFAULT_ALLOCATOR
-    #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) || defined(_WIN32)
+    #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) || defined(_MSC_VER)
+        // -----------------------------------------------------------------------------
+        // When building with the Microsoft compiler, we use a custom allocator because
+        // the default one fragments memory when reallocating. This is desirable only 
+        // when creating large sparsepp hash maps. If you create lots of small hash_maps,
+        // define the following before including spp.h:
+        //     #define SPP_DEFAULT_ALLOCATOR spp::libc_allocator
+        // -----------------------------------------------------------------------------
         #define SPP_DEFAULT_ALLOCATOR spp_::spp_allocator
         #define SPP_INCLUDE_SPP_ALLOC
     #else
