@@ -98,6 +98,14 @@ These classes provide the same interface as std::unordered_map and std::unordere
 
 - Since items are not grouped into buckets, Bucket APIs have been adapted: `max_bucket_count` is equivalent to `max_size`, and `bucket_count` returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.
 
+## Memory allocator on Windows (when building with Visual Studio)
+
+When building with the Microsoft compiler, we use a custom allocator because the default one (from the Visual C++ runtime) fragments memory when reallocating. 
+
+This is desirable *only* when creating large sparsepp hash maps. If you create lots of small hash_maps, memory usage may increase instead of decreasing as expected.  The reason is that, for each instance of a hash_map, the custom memory allocator creates a new memory space to allocate from, which is typically 4K, so it may be a big waste if just a few items are allocated.
+
+If that is the case, in order to revert to the base allocator, define the following before including spp.h: `#define SPP_DEFAULT_ALLOCATOR spp::libc_allocator`
+
 ## Integer keys, and other hash function considerations.
 
 1. For basic integer types, sparsepp provides a default hash function which does some mixing of the bits of the keys (see [Integer Hashing](http://burtleburtle.net/bob/hash/integer.html)). This prevents a pathological case where inserted keys are sequential (1, 2, 3, 4, ...), and the lookup on non-present keys becomes very slow. 
