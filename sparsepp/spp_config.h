@@ -14,7 +14,7 @@
 #endif
 
 #ifndef SPP_DEFAULT_ALLOCATOR
-    #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) || defined(_MSC_VER)
+    #if (defined(SPP_USE_SPP_ALLOC) && SPP_USE_SPP_ALLOC) && defined(_MSC_VER)
         // -----------------------------------------------------------------------------
         // When building with the Microsoft compiler, we use a custom allocator because
         // the default one fragments memory when reallocating. This is desirable only 
@@ -28,8 +28,6 @@
         #define SPP_DEFAULT_ALLOCATOR spp_::libc_allocator
     #endif
 #endif
-
-#define SPP_ALLOC_PAGE_SIZE 512
 
 #ifndef SPP_GROUP_SIZE
     // must be 32 or 64
