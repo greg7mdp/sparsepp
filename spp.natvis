@@ -32,7 +32,7 @@
   <Type Name="spp::Two_d_iterator&lt;*,*,*,*&gt;">
     <DisplayString Condition="row_current==0">end()</DisplayString>
     <DisplayString Condition="row_current->_group == -1">end()</DisplayString>
-    <DisplayString>{{item={*col_current}}}</DisplayString>
+    <DisplayString>{*col_current}</DisplayString>
   </Type>
 
 </AutoVisualizer>  
