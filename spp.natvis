@@ -33,6 +33,9 @@
     <DisplayString Condition="row_current==0">end()</DisplayString>
     <DisplayString Condition="row_current->_group == -1">end()</DisplayString>
     <DisplayString>{*col_current}</DisplayString>
+    <Expand>
+      <ExpandedItem Condition="row_current->_group != -1">*col_current</ExpandedItem>
+    </Expand>
   </Type>
 
 </AutoVisualizer>  
