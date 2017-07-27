@@ -1505,6 +1505,10 @@ private:
             if (num_items > 1)
             {
                 p = _allocate_group(alloc, num_items - 1);
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
                 if (offset)
                     std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group)),
                                             MK_MOVE_IT((mutable_pointer)(_group + offset)),
@@ -1513,6 +1517,9 @@ private:
                     std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group + offset + 1)),
                                             MK_MOVE_IT((mutable_pointer)(_group + num_items)),
                                             (mutable_pointer)(p + offset));
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
             }
             else
             {
@@ -2617,19 +2624,6 @@ private:
     // can't do a destructive copy, we make the typename private.
     // -----------------------------------------------------------------------
     enum MoveDontCopyT {MoveDontCopy, MoveDontGrow};
-
-    void _squash_deleted()
-    {
-        // gets rid of any deleted entries we have
-        // ---------------------------------------
-        if (num_deleted)
-        {
-            // get rid of deleted before writing
-            sparse_hashtable tmp(MoveDontGrow, *this);
-            swap(tmp);                    // now we are tmp
-        }
-        assert(num_deleted == 0);
-    }
 
     // creating iterators from sparsetable::ne_iterators
     // -------------------------------------------------
