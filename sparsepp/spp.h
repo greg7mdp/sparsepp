@@ -1505,10 +1505,6 @@ private:
             if (num_items > 1)
             {
                 p = _allocate_group(alloc, num_items - 1);
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#endif
                 if (offset)
                     std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group)),
                                             MK_MOVE_IT((mutable_pointer)(_group + offset)),
@@ -1517,9 +1513,6 @@ private:
                     std::uninitialized_copy(MK_MOVE_IT((mutable_pointer)(_group + offset + 1)),
                                             MK_MOVE_IT((mutable_pointer)(_group + num_items)),
                                             (mutable_pointer)(p + offset));
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
             }
             else
             {
