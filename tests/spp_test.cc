@@ -1103,6 +1103,21 @@ public:
 	int* count_;
 };
 
+// A simple allocator which does not have a default constructor.
+// This ensures that the allocator specified for a hashtable is
+// properly rebound and copied.
+template<class T>
+struct AllocWithParam : public std::allocator<T> {
+    explicit AllocWithParam(int /*unused*/) {}
+
+    template<class U>
+    AllocWithParam(const AllocWithParam<U>& /*unused*/) {}
+
+    template<class U>
+    struct rebind {
+        typedef AllocWithParam<U> other;
+    };
+};
 
 // Below are a few fun routines that convert a value into a key, used
 // for dense_hashtable and sparse_hashtable.  It's our responsibility
@@ -2891,6 +2906,12 @@ TEST(HashtableTest, CXX11)
 #endif
 }
 
+TEST(HashtableTest, AllocWithParam)
+{
+    typedef AllocWithParam<pair<const int, int>> AllocType;
+    AllocType my_alloc(3);
+    sparse_hash_map<int, int, Hasher, Hasher, AllocType> map(my_alloc);
+}
 
 
 TEST(HashtableTest, NestedHashtables) 

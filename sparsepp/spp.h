@@ -1980,7 +1980,8 @@ public:
         _last_group(0),
         _table_size(sz),
         _num_buckets(0),
-        _alloc(alloc)  
+        _group_alloc(alloc),
+        _alloc(alloc)
                        // todo - copy or move allocator according to
                        // http://en.cppreference.com/w/cpp/container/unordered_map/unordered_map
     {
@@ -2985,7 +2986,7 @@ public:
         if (!empty() || num_deleted != 0)
         {
             table.clear();
-            table = Table(HT_DEFAULT_STARTING_BUCKETS);
+            table = Table(HT_DEFAULT_STARTING_BUCKETS, table.get_allocator());
         }
         settings.reset_thresholds(bucket_count());
         num_deleted = 0;
