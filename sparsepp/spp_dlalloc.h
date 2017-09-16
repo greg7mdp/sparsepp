@@ -70,6 +70,22 @@ namespace spp
 
     // -----------------------------------------------------------
     // -----------------------------------------------------------
+    struct MSpace : public spp_rc
+    {
+        MSpace() :
+            _sp(create_mspace(0, 0))
+        {}
+
+        ~MSpace()
+        {
+            destroy_mspace(_sp);
+        }
+
+        mspace _sp;
+    };
+
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
     template<class T>
     class spp_allocator
     {
@@ -80,7 +96,20 @@ namespace spp
         typedef const T*  const_pointer;
         typedef size_t    size_type;
 
+        MSpace *getSpace() const { return _space.get(); }
+
         spp_allocator() : _space(new MSpace) {}
+        
+        template<class U>
+        spp_allocator(const spp_allocator<U> &o) : _space(o.getSpace()) {}
+
+        template<class U>
+        spp_allocator& operator=(const spp_allocator<U> &o) 
+        {
+            if (&o != this)
+                _space = o.getSpace();
+            return *this;
+        }
 
         void swap(spp_allocator &o)
         {
@@ -154,20 +183,6 @@ namespace spp
         }
         
     private:
-        struct MSpace : public spp_rc
-        {
-            MSpace() :
-                _sp(create_mspace(0, 0))
-            {}
-
-            ~MSpace()
-            {
-                destroy_mspace(_sp);
-            }
-
-            mspace _sp;
-        };
-
         spp_sptr<MSpace> _space;
         spp_sptr<MSpace> _space_to_clear;
     };
@@ -311,7 +326,8 @@ static size_t align_offset(void *p)
 #endif
 
 #ifndef SPP_MALLOC_FAILURE_ACTION
-    #define SPP_MALLOC_FAILURE_ACTION  errno = ENOMEM
+    // ENOMEM = 12
+    #define SPP_MALLOC_FAILURE_ACTION  errno = 12
 #endif
 
 
