@@ -1085,7 +1085,7 @@ private:
         // aggressive allocation first, then decreasing as sparsegroups fill up
         // --------------------------------------------------------------------
         static uint8_t s_alloc_batch_sz[SPP_GROUP_SIZE] = { 0 };
-        if (!s_alloc_batch_sz[0])
+        if (!s_alloc_batch_sz[SPP_GROUP_SIZE - 1])
         {
             // 32 bit bitmap
             // ........ .... .... .. .. .. .. .  .  .  .  .  .  .  .
