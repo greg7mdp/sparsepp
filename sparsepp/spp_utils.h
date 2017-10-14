@@ -121,6 +121,12 @@
     #define SPP_CONSTEXPR constexpr
 #endif
 
+#ifdef SPP_NO_CXX14_CONSTEXPR
+    #define SPP_CXX14_CONSTEXPR
+#else
+    #define SPP_CXX14_CONSTEXPR constexpr
+#endif
+
 #define SPP_INLINE
 
 #ifndef spp_
