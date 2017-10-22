@@ -1084,31 +1084,36 @@ private:
 #if !defined(SPP_ALLOC_SZ) || (SPP_ALLOC_SZ == 0)
         // aggressive allocation first, then decreasing as sparsegroups fill up
         // --------------------------------------------------------------------
-        static uint8_t s_alloc_batch_sz[SPP_GROUP_SIZE] = { 0 };
-        if (!s_alloc_batch_sz[SPP_GROUP_SIZE - 1])
+        struct alloc_batch_size
         {
             // 32 bit bitmap
             // ........ .... .... .. .. .. .. .  .  .  .  .  .  .  .
             //     8     12   16  18 20 22 24 25 26   ...          32
             // ------------------------------------------------------
-            uint8_t group_sz          = SPP_GROUP_SIZE / 4;
-            uint8_t group_start_alloc = SPP_GROUP_SIZE / 8; //4;
-            uint8_t alloc_sz          = group_start_alloc;
-            for (int i=0; i<4; ++i)
+            SPP_CXX14_CONSTEXPR alloc_batch_size()
+                : data()
             {
-                for (int j=0; j<group_sz; ++j)
+                uint8_t group_sz          = SPP_GROUP_SIZE / 4;
+                uint8_t group_start_alloc = SPP_GROUP_SIZE / 8; //4;
+                uint8_t alloc_sz          = group_start_alloc;
+                for (int i=0; i<4; ++i)
                 {
-                    if (j && j % group_start_alloc == 0)
-                        alloc_sz += group_start_alloc;
-                    s_alloc_batch_sz[i * group_sz + j] = alloc_sz;
+                    for (int j=0; j<group_sz; ++j)
+                    {
+                        if (j && j % group_start_alloc == 0)
+                            alloc_sz += group_start_alloc;
+                        data[i * group_sz + j] = alloc_sz;
+                    }
+                    if (group_start_alloc > 2)
+                        group_start_alloc /= 2;
+                    alloc_sz += group_start_alloc;
                 }
-                if (group_start_alloc > 2)
-                    group_start_alloc /= 2;
-                alloc_sz += group_start_alloc;
             }
-        }
+            uint8_t data[SPP_GROUP_SIZE];
+        };
 
-        return n ? static_cast<uint32_t>(s_alloc_batch_sz[n-1]) : 0; // more aggressive alloc at the beginning
+        static alloc_batch_size s_alloc_batch_sz;
+        return n ? static_cast<uint32_t>(s_alloc_batch_sz.data[n-1]) : 0; // more aggressive alloc at the beginning
 
 #elif (SPP_ALLOC_SZ == 1)
         // use as little memory as possible - slowest insert/delete in table
