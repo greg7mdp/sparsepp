@@ -1,7 +1,7 @@
 #if !defined(spp_stdint_h_guard)
 #define spp_stdint_h_guard
 
-#include <sparsepp/spp_config.h>
+#include "spp_config.h"
 
 #if defined(SPP_HAS_CSTDINT) && (__cplusplus >= 201103)
     #include <cstdint>

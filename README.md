@@ -50,7 +50,7 @@ int main()
 
 ## Installation
 
-No compilation is needed, as this is a header-only library. The installation consist in copying the sparsepp directory wherever it will be convenient to include in your project(s). Also make the path to this directory is provided to the compiler with the `-I` option.
+No compilation is needed, as this is a header-only library. The installation consist in copying the sparsepp directory wherever it will be convenient to include in your project(s).
 
 ## Warning - iterator invalidation on erase/insert
 
