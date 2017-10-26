@@ -8,7 +8,7 @@
  */
 
 #include <cassert>
-#include <sparsepp/spp_config.h>
+#include "spp_config.h"
 
 // ------------------------------------------------------------------------
 class spp_rc

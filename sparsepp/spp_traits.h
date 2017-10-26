@@ -1,7 +1,7 @@
 #if !defined(spp_traits_h_guard)
 #define spp_traits_h_guard
 
-#include <sparsepp/spp_config.h>
+#include "spp_config.h"
 
 template<int S, int H> class HashObject; // for Google's benchmark, not in spp namespace!
 
