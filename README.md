@@ -52,11 +52,13 @@ int main()
 
 No compilation is needed, as this is a header-only library. The installation consist in copying the sparsepp directory wherever it will be convenient to include in your project(s).
 
-## Warning - iterator invalidation on erase/insert
+## Warning - iterator and reference invalidation on erase/insert
 
 1. erasing elements is likely to invalidate iterators (for example when calling `erase()`)
 
 2. inserting new elements is likely to invalidate iterators (iterator invalidation can also happen with std::unordered_map if rehashing occurs due to the insertion)
+
+3. references to values stored in a sparse_hash_map or set are likely to be invalidated on insert()/erase(). This is not the case for std::unordered_map or set.
 
 ## Usage
 
