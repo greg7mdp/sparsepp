@@ -18,8 +18,12 @@
     #include <sys/types.h>
     #include <sys/sysinfo.h>
 #elif defined(__FreeBSD__)
-    #include <sys/types.h>
+    #include <paths.h>
+    #include <fcntl.h>
+    #include <kvm.h>
+    #include <unistd.h>
     #include <sys/sysctl.h>
+    #include <sys/user.h>
 #endif
 
 namespace spp
@@ -39,6 +43,25 @@ namespace spp
         totalVirtualMem += memInfo.totalswap;
         totalVirtualMem *= memInfo.mem_unit;
         return static_cast<uint64_t>(totalVirtualMem);
+#elif defined(__FreeBSD__)
+        kvm_t *kd;
+        u_int pageCnt;
+        size_t pageCntLen = sizeof(pageCnt);
+        u_int pageSize;
+        struct kvm_swap kswap;
+        uint64_t totalVirtualMem;
+
+        pageSize = static_cast<u_int>(getpagesize());
+
+        sysctlbyname("vm.stats.vm.v_page_count", &pageCnt, &pageCntLen, NULL, 0);
+        totalVirtualMem = pageCnt * pageSize;
+
+        kd = kvm_open(NULL, _PATH_DEVNULL, NULL, O_RDONLY, "kvm_open");
+        kvm_getswapinfo(kd, &kswap, 1, 0);
+        kvm_close(kd);
+        totalVirtualMem += kswap.ksw_total * pageSize;
+
+        return totalVirtualMem;
 #endif
     }
 
@@ -58,6 +81,27 @@ namespace spp
         virtualMemUsed *= memInfo.mem_unit;
 
         return static_cast<uint64_t>(virtualMemUsed);
+#elif defined(__FreeBSD__)
+        kvm_t *kd;
+        u_int pageSize;
+        u_int pageCnt, freeCnt;
+        size_t pageCntLen = sizeof(pageCnt);
+        size_t freeCntLen = sizeof(freeCnt);
+        struct kvm_swap kswap;
+        uint64_t virtualMemUsed;
+
+        pageSize = static_cast<u_int>(getpagesize());
+
+        sysctlbyname("vm.stats.vm.v_page_count", &pageCnt, &pageCntLen, NULL, 0);
+        sysctlbyname("vm.stats.vm.v_free_count", &freeCnt, &freeCntLen, NULL, 0);
+        virtualMemUsed = (pageCnt - freeCnt) * pageSize;
+
+        kd = kvm_open(NULL, _PATH_DEVNULL, NULL, O_RDONLY, "kvm_open");
+        kvm_getswapinfo(kd, &kswap, 1, 0);
+        kvm_close(kd);
+        virtualMemUsed += kswap.ksw_used * pageSize;
+
+        return virtualMemUsed;
 #endif
     }
 
@@ -98,6 +142,13 @@ namespace spp
 
         fclose(file);
         return static_cast<uint64_t>(result) * 1024;
+#elif defined(__FreeBSD__)
+        struct kinfo_proc info;
+        size_t infoLen = sizeof(info);
+        int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
+
+        sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &infoLen, NULL, 0);
+        return static_cast<uint64_t>(info.ki_rssize * getpagesize());
 #endif
     }
 
@@ -116,6 +167,13 @@ namespace spp
 
         totalPhysMem *= memInfo.mem_unit;
         return static_cast<uint64_t>(totalPhysMem);
+#elif defined(__FreeBSD__)
+        u_long physMem;
+        size_t physMemLen = sizeof(physMem);
+        int mib[] = { CTL_HW, HW_PHYSMEM };
+
+        sysctl(mib, sizeof(mib) / sizeof(*mib), &physMem, &physMemLen, NULL, 0);
+        return physMem;
 #endif
     }
 
