@@ -12,6 +12,9 @@ else
     ifeq ($(OS),Linux)
         CXXFLAGS        += -D_XOPEN_SOURCE=700
     endif
+    ifeq ($(OS),FreeBSD)
+	LDFLAGS		= -lkvm
+    endif
 endif
 
 def: spp_test spp_relative_include_test

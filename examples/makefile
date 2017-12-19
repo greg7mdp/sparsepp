@@ -11,6 +11,9 @@ else
     ifeq ($(OS),Linux)
         CXXFLAGS        += -D_XOPEN_SOURCE=700
     endif
+    ifeq ($(OS),FreeBSD)
+	LDFLAGS		= -lkvm
+    endif
 endif
 
 all: $(TARGETS)
