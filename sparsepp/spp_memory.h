@@ -14,9 +14,12 @@
     #include <Psapi.h>
     #undef min
     #undef max
-#else
+#elif defined(__linux__)
     #include <sys/types.h>
     #include <sys/sysinfo.h>
+#elif defined(__FreeBSD__)
+    #include <sys/types.h>
+    #include <sys/sysctl.h>
 #endif
 
 namespace spp
@@ -28,7 +31,7 @@ namespace spp
         memInfo.dwLength = sizeof(MEMORYSTATUSEX);
         GlobalMemoryStatusEx(&memInfo);
         return static_cast<uint64_t>(memInfo.ullTotalPageFile);
-#else
+#elif defined(__linux__)
         struct sysinfo memInfo;
         sysinfo (&memInfo);
         auto totalVirtualMem = memInfo.totalram;
@@ -46,7 +49,7 @@ namespace spp
         memInfo.dwLength = sizeof(MEMORYSTATUSEX);
         GlobalMemoryStatusEx(&memInfo);
         return static_cast<uint64_t>(memInfo.ullTotalPageFile - memInfo.ullAvailPageFile);
-#else
+#elif defined(__linux__)
         struct sysinfo memInfo;
         sysinfo(&memInfo);
         auto virtualMemUsed = memInfo.totalram - memInfo.freeram;
@@ -64,7 +67,7 @@ namespace spp
         PROCESS_MEMORY_COUNTERS_EX pmc;
         GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
         return static_cast<uint64_t>(pmc.PrivateUsage);
-#else
+#elif defined(__linux__)
         auto parseLine = 
             [](char* line)->int
             {
@@ -105,7 +108,7 @@ namespace spp
         memInfo.dwLength = sizeof(MEMORYSTATUSEX);
         GlobalMemoryStatusEx(&memInfo);
         return static_cast<uint64_t>(memInfo.ullTotalPhys);
-#else
+#elif defined(__linux__)
         struct sysinfo memInfo;
         sysinfo(&memInfo);
 
