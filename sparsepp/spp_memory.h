@@ -63,7 +63,7 @@ namespace spp
 
         return totalVirtualMem;
 #else
-		return 0;
+        return 0;
 #endif
     }
 
@@ -105,7 +105,7 @@ namespace spp
 
         return virtualMemUsed;
 #else
-		return 0;
+        return 0;
 #endif
     }
 
@@ -154,7 +154,7 @@ namespace spp
         sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &infoLen, NULL, 0);
         return static_cast<uint64_t>(info.ki_rssize * getpagesize());
 #else
-		return 0;
+        return 0;
 #endif
     }
 
@@ -181,7 +181,7 @@ namespace spp
         sysctl(mib, sizeof(mib) / sizeof(*mib), &physMem, &physMemLen, NULL, 0);
         return physMem;
 #else
-		return 0;
+        return 0;
 #endif
     }
 
