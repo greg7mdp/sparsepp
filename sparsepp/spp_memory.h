@@ -62,6 +62,8 @@ namespace spp
         totalVirtualMem += kswap.ksw_total * pageSize;
 
         return totalVirtualMem;
+#else
+		return 0;
 #endif
     }
 
@@ -102,6 +104,8 @@ namespace spp
         virtualMemUsed += kswap.ksw_used * pageSize;
 
         return virtualMemUsed;
+#else
+		return 0;
 #endif
     }
 
@@ -149,6 +153,8 @@ namespace spp
 
         sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &infoLen, NULL, 0);
         return static_cast<uint64_t>(info.ki_rssize * getpagesize());
+#else
+		return 0;
 #endif
     }
 
@@ -174,6 +180,8 @@ namespace spp
 
         sysctl(mib, sizeof(mib) / sizeof(*mib), &physMem, &physMemLen, NULL, 0);
         return physMem;
+#else
+		return 0;
 #endif
     }
 
