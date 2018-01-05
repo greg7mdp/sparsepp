@@ -5,13 +5,13 @@
 Sparsepp is derived from Google's excellent [sparsehash](https://github.com/sparsehash/sparsehash) implementation. It aims to achieve the following objectives:
 
 - A drop-in alternative for unordered_map and unordered_set.
-- **Extremely low memory usage** (typically about one byte overhead per entry).
 - **Very efficient**, typically faster than your compiler's unordered map/set or Boost's.
 - **C++11 support** (if supported by compiler).
 - ~~Single header~~ not anymore
 - **Tested** on Windows (vs2010-2015, g++), linux (g++, clang++) and MacOS (clang++).
 
-We believe Sparsepp provides an unparalleled combination of performance and memory usage, and will outperform your compiler's unordered_map on both counts. Only Google's `dense_hash_map` is consistently faster, at the cost of much greater memory usage (especially when the final size of the map is not known in advance). 
+We believe Sparsepp provides an unparalleled combination of performance and memory usage, and will outperform your compiler's unordered_map on both counts. Only Google's `dense_hash_map` is consistently faster, at the cost of much greater memory usage (especially when the final size of the map is not known in advance, and insertions cause a resizing). 
+
 
 For a detailed comparison of various hash implementations, including Sparsepp, please see our [write-up](bench.md).
 
