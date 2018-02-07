@@ -2933,14 +2933,7 @@ public:
     {
     }
 
-    sparse_hashtable& operator=(sparse_hashtable&& o)
-    {
-        using std::swap;
-
-        sparse_hashtable tmp(std::move(o));
-        swap(tmp, *this);
-        return *this;
-    }
+    sparse_hashtable& operator=(sparse_hashtable&& o) = default;
 #endif
 
     sparse_hashtable(MoveDontCopyT mover,
@@ -3710,6 +3703,8 @@ public:
                     const allocator_type& alloc) :
         rep(std::move(o.rep), alloc)
     {}
+
+    sparse_hash_map& operator=(sparse_hash_map &&o) = default;
 #endif
 
 #if !defined(SPP_NO_CXX11_HDR_INITIALIZER_LIST)
