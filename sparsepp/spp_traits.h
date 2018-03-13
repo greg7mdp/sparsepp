@@ -90,7 +90,10 @@ template<typename T> struct is_reference<T&> : true_type {};
 // ------------------------------------------------------------------------
 template <class T> struct is_relocatable;
 template <class T> struct is_relocatable :
-     integral_constant<bool, (is_integral<T>::value || is_floating_point<T>::value)>
+     integral_constant<bool, (is_integral<T>::value ||
+                              is_floating_point<T>::value ||
+                              is_pointer<T>::value
+                             )>
 { };
 
 template<int S, int H> struct is_relocatable<HashObject<S, H> > : true_type { };
