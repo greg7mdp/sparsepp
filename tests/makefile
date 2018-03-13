@@ -32,7 +32,7 @@ spp_test: spp_test.cc $(SPP_DEPS) makefile
 
 # Test that it's possible to use spp with relative includes only - without adding -I to the compiler
 spp_relative_include_test: spp_relative_include_test.cc $(SPP_DEPS) makefile
-	$(CXX) $(filter-out -I%,$(CXXFLAGS)) -D_CRT_SECURE_NO_WARNINGS spp_relative_include_test.cc -o spp_test
+	$(CXX) $(filter-out -I%,$(CXXFLAGS)) -D_CRT_SECURE_NO_WARNINGS spp_relative_include_test.cc -o spp_relative_include_test
 
 %: %.cc $(SPP_DEPS) makefile
 	$(CXX) $(CXXFLAGS) -DNDEBUG $< -o $@ $(LDFLAGS)
