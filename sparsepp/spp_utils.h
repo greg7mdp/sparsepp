@@ -183,15 +183,19 @@ inline size_t spp_mix_32(uint32_t a)
     return static_cast<size_t>(a);
 }
 
-// Maybe we should do a more thorough scrambling as described in
+// More thorough scrambling as described in
 // https://gist.github.com/badboy/6267743
-// -------------------------------------------------------------
+// ----------------------------------------
 inline size_t spp_mix_64(uint64_t a)
 {
-    a = a ^ (a >> 4);
-    a = (a ^ 0xdeadbeef) + (a << 5);
-    a = a ^ (a >> 11);
-    return (size_t)a;
+    a = (~a) + (a << 21); // a = (a << 21) - a - 1;
+    a = a ^ (a >> 24);
+    a = (a + (a << 3)) + (a << 8); // a * 265
+    a = a ^ (a >> 14);
+    a = (a + (a << 2)) + (a << 4); // a * 21
+    a = a ^ (a >> 28);
+    a = a + (a << 31);
+    return a;
 }
 
 template<class ArgumentType, class ResultType>
