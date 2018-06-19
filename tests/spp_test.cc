@@ -72,7 +72,6 @@ using SPP_NAMESPACE::sparse_hash_set;
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 #ifndef _MSC_VER   // windows defines its own version
-    #define _strdup strdup
     #ifdef __MINGW32__ // mingw has trouble writing to /tmp
         static std::string TmpFile(const char* basename)
         {
@@ -100,6 +99,15 @@ using SPP_NAMESPACE::sparse_hash_set;
     #pragma warning(pop)
 #endif
 
+
+// ---------------------------------------------------------------------
+char *mystrdup(const char *str)
+{
+    size_t len = strlen(str);
+    char *result = (char *)malloc(len + 1);
+    memcpy(result, str, len + 1);
+    return result;
+}
 
 // ---------------------------------------------------------------------
 // This is the "default" interface, which just passes everything
@@ -951,7 +959,7 @@ public:
     void set_s(const char* new_s) {
         if (s_ != kDefault)
             free(const_cast<char*>(s_));
-        s_ = (new_s == NULL ? kDefault : reinterpret_cast<char*>(_strdup(new_s)));
+        s_ = (new_s == NULL ? kDefault : reinterpret_cast<char*>(mystrdup(new_s)));
     }
     const char* s() const { return s_; }
 private:
@@ -1184,7 +1192,7 @@ template<> char* UniqueObjectHelper(int index)
     if (!g_unique_charstar_objects[static_cast<size_t>(index)]) {
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "%d", index);
-        g_unique_charstar_objects[static_cast<size_t>(index)] = _strdup(buffer);
+        g_unique_charstar_objects[static_cast<size_t>(index)] = mystrdup(buffer);
     }
     return g_unique_charstar_objects[static_cast<size_t>(index)];
 }

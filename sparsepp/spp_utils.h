@@ -195,7 +195,7 @@ inline size_t spp_mix_64(uint64_t a)
     a = (a + (a << 2)) + (a << 4); // a * 21
     a = a ^ (a >> 28);
     a = a + (a << 31);
-    return a;
+    return static_cast<size_t>(a);
 }
 
 template<class ArgumentType, class ResultType>
