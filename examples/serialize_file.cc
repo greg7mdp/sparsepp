@@ -45,6 +45,33 @@ public:
         return true;
     }
 
+    // serialize std::vector<T> to FILE
+    // --------------------------------
+    template <class T>
+    bool operator()(FILE *fp, const std::vector<T>& value)
+    {
+        const size_t size = value.size();
+        if (!(*this)(fp, size))
+            return false;
+        for (size_t i=0; i<size; ++i)
+            if (!(*this)(fp, value[i]))
+                return false;
+        return true;
+    }
+
+    template <class T>
+    bool operator()(FILE *fp, std::vector<T>* value)
+    {
+        size_t size;
+        if (!(*this)(fp, &size))
+            return false;
+        new (value) std::vector<T>(size);
+        for (size_t i=0; i<size; ++i)
+            if (!(*this)(fp, &(*value)[i]))
+                return false;
+        return true;
+    }
+
     // serialize std::pair<const A, B> to FILE - needed for maps
     // ---------------------------------------------------------
     template <class A, class B>
