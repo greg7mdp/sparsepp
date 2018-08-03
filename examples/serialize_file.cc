@@ -75,7 +75,7 @@ public:
     // serialize spp::sparse_hash_map<K, V, H, E, A> to FILE
     // -----------------------------------------------------
     template <class K, class V, 
-              class H = spp_hash<K>, 
+              class H = spp::spp_hash<K>, 
               class E = std::equal_to<K>, 
               class A = SPP_DEFAULT_ALLOCATOR<std::pair<const K, T> > >
     bool operator()(FILE *fp, const spp::sparse_hash_map<K, V, H, E, A>& value)
@@ -84,7 +84,7 @@ public:
     }
 
     template <class K, class V, 
-              class H = spp_hash<K>, 
+              class H = spp::spp_hash<K>, 
               class E = std::equal_to<K>, 
               class A = SPP_DEFAULT_ALLOCATOR<std::pair<const K, T> > >
     bool operator()(FILE *fp, spp::sparse_hash_map<K, V, H, E, A> *value)
