@@ -5,6 +5,20 @@ matrix:
       compiler: gcc
     - os: linux
       compiler: clang
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['gcc-5']
+      env: COMPILER=g++-5
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['gcc-8']
+      env: COMPILER=g++-8
     - os: osx
       compiler: gcc
     - os: osx
