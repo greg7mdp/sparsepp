@@ -1381,7 +1381,7 @@ private:
         }
 
         for (uint32_t i = num_items; i > offset; --i)
-            memcpy(_group + i, _group + i-1, sizeof(*_group));
+            memcpy(static_cast<void *>(_group + i), _group + i-1, sizeof(*_group));
 
         _init_val((mutable_pointer)(_group + offset), val);
     }
