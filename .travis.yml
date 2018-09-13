@@ -52,7 +52,5 @@ matrix:
 dist: trusty
 sudo: false
 
-before_script:
-  - export CXX=${COMPILER}
-
-script: cd tests && make && make test
+script: 
+  cd tests && make CXX=$COMPILER && make test
