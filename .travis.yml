@@ -33,13 +33,13 @@ matrix:
       addons:
         apt:
           sources: ['llvm-toolchain-trusty-6.0']
-          packages: ['clang-6.0', 'libstdc++-7-dev']
+          packages: ['clang-6.0']
       env: COMPILER='clang++-6.0'
     - os: linux
       compiler: clang
       addons:
         apt:
-          sources: ['llvm-toolchain-trusty-7.0', 'libstdc++-7-dev']
+          sources: ['llvm-toolchain-trusty-7.0']
           packages: ['clang-7.0']
       env: COMPILER='clang++-7.0'
     - os: osx
