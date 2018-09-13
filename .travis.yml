@@ -3,8 +3,10 @@ matrix:
   include:
     - os: linux
       compiler: gcc
+      env: COMPILER='g++'
     - os: linux
       compiler: clang
+      env: COMPILER='clang++'
     - os: linux
       compiler: gcc
       addons:
@@ -42,11 +44,13 @@ matrix:
       env: COMPILER='clang++-7.0'
     - os: osx
       compiler: gcc
+      env: COMPILER='g++'
     - os: osx
       compiler: clang
+      env: COMPILER='clang++'
 
 dist: trusty
-sudo: true
+sudo: false
 
 before_script:
   - export CXX=${COMPILER}
