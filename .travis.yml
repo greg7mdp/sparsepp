@@ -28,14 +28,16 @@ matrix:
       env: COMPILER='g++-8' CPP14=1
     - os: linux
       compiler: clang
+      addons:
         apt:
           sources: ['llvm-toolchain-trusty-6.0']
           packages: ['clang-6.0']
       env: COMPILER='clang++-6.0' CPP14=1
     - os: linux
       compiler: clang
+      addons:
         apt:
-          sources: ['llvm-toolchain-trusty-7.0']
+          sources: ['llvm-toolchain-trusty-7']
           packages: ['clang-7.0']
       env: COMPILER='clang++-7.0' CPP14=1
     - os: osx
