@@ -35,7 +35,7 @@ matrix:
     - os: linux
       compiler: clang
         apt:
-          sources: ['llvm-toolchain-trusty-7']
+          sources: ['llvm-toolchain-trusty-7.0']
           packages: ['clang-7.0']
       env: COMPILER='clang++-7.0' CPP14=1
     - os: osx
