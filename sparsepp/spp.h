@@ -1485,7 +1485,7 @@ private:
         _group[offset].~value_type();
 
         for (size_type i = offset; i < num_items - 1; ++i)
-            memcpy(_group + i, _group + i + 1, sizeof(*_group));
+            memcpy(static_cast<void *>(_group + i), _group + i + 1, sizeof(*_group));
 
         if (_sizing(num_items - 1) != num_alloc)
         {
@@ -2087,7 +2087,7 @@ public:
             if (sz)
             {
                 _alloc_group_array(sz, first, last);
-                memcpy(first, _first_group, sizeof(*first) * (std::min)(sz, old_sz));
+                memcpy(static_cast<void *>(first), _first_group, sizeof(*first) * (std::min)(sz, old_sz));
             }
 
             if (sz < old_sz)
