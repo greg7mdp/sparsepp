@@ -66,7 +66,7 @@ matrix:
             - llvm-toolchain-trusty-3.9
           packages:
             - clang-3.9
-      env: COMPILER='clang++-3.9'
+      env: COMPILER='clang++-3.9' CXXSTD='c++11'
 
     - os: linux
       compiler: clang
@@ -76,7 +76,7 @@ matrix:
             - llvm-toolchain-trusty-4.0
           packages:
             - clang-4.0
-      env: COMPILER='clang++-4.0'
+      env: COMPILER='clang++-4.0' CXXSTD='c++11'
 
     - os: linux
       compiler: clang
@@ -86,7 +86,7 @@ matrix:
             - llvm-toolchain-trusty-5.0
           packages:
             - clang-5.0
-      env: COMPILER='clang++-5.0'
+      env: COMPILER='clang++-5.0' CXXSTD='c++14'
 
 dist: trusty
 sudo: false

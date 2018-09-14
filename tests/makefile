@@ -1,4 +1,5 @@
-CXXFLAGS     = -O2 -std=c++11 -I..
+CXXSTD      ?= c++11
+CXXFLAGS     = -O2 -std=$(CXXSTD) -I..
 CXXFLAGS    += -Wall -pedantic -Wextra
 SPP_DEPS_1   =  spp.h spp_utils.h spp_dlalloc.h spp_traits.h spp_config.h
 SPP_DEPS     = $(addprefix ../sparsepp/,$(SPP_DEPS_1))
