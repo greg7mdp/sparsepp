@@ -1064,6 +1064,7 @@ private:
     // T can be std::pair<const K, V>, but sometime we need to cast to a mutable type
     // ------------------------------------------------------------------------------
     typedef typename spp_::cvt<T>::type                    mutable_value_type;
+    typedef mutable_value_type &                           mutable_reference;
     typedef mutable_value_type *                           mutable_pointer;
     typedef const mutable_value_type *                     const_mutable_pointer;
 
@@ -1332,9 +1333,9 @@ private:
     void _init_val(mutable_value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        ::new (p) value_type(std::move(val));
+        ::new (p) value_type(std::move((mutable_reference)val));
 #else
-        ::new (p) value_type(val);
+        ::new (p) value_type((mutable_reference)val);
 #endif
     }
 
@@ -1348,7 +1349,7 @@ private:
     void _set_val(value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        *(mutable_pointer)p = std::move(val);
+        *(mutable_pointer)p = std::move((mutable_reference)val);
 #else
         using std::swap;
         swap(*(mutable_pointer)p, *(mutable_pointer)&val);
