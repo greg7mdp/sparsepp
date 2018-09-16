@@ -3234,7 +3234,7 @@ public:
     std::pair<iterator, bool> insert(P &&obj)
     {
         _resize_delta(1);                      // adding an object, grow if need be
-        value_type val(std::forward<value_type>(obj));
+        value_type val(std::forward<P>(obj));
         return _insert_noresize(val);
     }
 #endif
