@@ -1139,8 +1139,7 @@ private:
         if (retval == NULL)
         {
             // the allocator is supposed to throw an exception if the allocation fails.
-            fprintf(stderr, "sparsehash FATAL ERROR: failed to allocate %d groups\n", num_alloc);
-            exit(1);
+            throw_exception(std::bad_alloc());
         }
         return retval;
     }
@@ -1226,7 +1225,7 @@ public:
     {
         _set_num_items(0);
         _set_num_alloc(0);
-         assert(_group == 0); if (_group) exit(1);
+         assert(_group == 0); 
     }
 
     sparsegroup(const sparsegroup& x, allocator_type& a) :
@@ -1244,7 +1243,7 @@ public:
         }
     }
 
-    ~sparsegroup() { assert(_group == 0); if (_group) exit(1); }
+    ~sparsegroup() { assert(_group == 0); }
 
     void destruct(allocator_type& a) { _free_group(a, _num_alloc()); }
 
@@ -1690,9 +1689,7 @@ private:
         // allocator (spp::spp_allocator).
         pointer realloc_or_die(pointer /*ptr*/, size_type /*n*/)
         {
-            fprintf(stderr, "realloc_or_die is only supported for "
-                    "spp::spp_allocator\n");
-            exit(1);
+            throw_exception(std::runtime_error("realloc_or_die is only supported for spp::spp_allocator\n"));
             return NULL;
         }
     };
@@ -1716,9 +1713,8 @@ private:
             pointer retval = this->reallocate(ptr, n);
             if (retval == NULL) 
             {
-                fprintf(stderr, "sparsehash: FATAL ERROR: failed to reallocate "
-                        "%lu elements for ptr %p", static_cast<unsigned long>(n), ptr);
-                exit(1);
+                // the allocator is supposed to throw an exception if the allocation fails.
+                throw_exception(std::bad_alloc());
             }
             return retval;
         }
@@ -1743,9 +1739,8 @@ private:
             pointer retval = this->reallocate(ptr, n);
             if (retval == NULL) 
             {
-                fprintf(stderr, "sparsehash: FATAL ERROR: failed to reallocate "
-                        "%lu elements for ptr %p", static_cast<unsigned long>(n), ptr);
-                exit(1);
+                // the allocator is supposed to throw an exception if the allocation fails.
+                throw_exception(std::bad_alloc());
             }
             return retval;
         }
