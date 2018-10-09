@@ -102,6 +102,8 @@ These classes provide the same interface as std::unordered_map and std::unordere
 
 - Since items are not grouped into buckets, Bucket APIs have been adapted: `max_bucket_count` is equivalent to `max_size`, and `bucket_count` returns the sparsetable size, which is normally at least twice the number of items inserted into the hash_map.
 
+- Values inserted into sparsepp have to either be `copyable and movable`, or just `movable`. See example movable.cc.
+
 ## Memory allocator on Windows (when building with Visual Studio)
 
 When building with the Microsoft compiler, we provide a custom allocator because the default one (from the Visual C++ runtime) fragments memory when reallocating. 
