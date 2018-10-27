@@ -3245,8 +3245,13 @@ public:
 
     // DefaultValue is a functor that takes a key and returns a value_type
     // representing the default value to be inserted if none is found.
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+    template <class DefaultValue, class KT>
+    value_type& find_or_insert(KT&& key)
+#else
     template <class DefaultValue>
     value_type& find_or_insert(const key_type& key)
+#endif
     {
         size_type num_probes = 0;              // how many times we've probed
         const size_type bucket_count_minus_one = bucket_count() - 1;
@@ -3262,17 +3267,20 @@ public:
             if (!grp_pos.test_strict())
             {
                 // not found
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+                auto&& def(default_value(std::forward<KT>(key)));
+#else
+                value_type def(default_value(key));
+#endif                
                 if (_resize_delta(1))
                 {
                     // needed to rehash to make room
                     // Since we resized, we can't use pos, so recalculate where to insert.
-                    value_type def(default_value(key));
                     return *(_insert_noresize(def).first);
                 }
                 else
                 {
                     // no need to rehash, insert right here
-                    value_type def(default_value(key));
                     return _insert_at(def, erased ? erased_pos : bucknum, erased);
                 }
             }
@@ -3575,10 +3583,18 @@ private:
     // For operator[].
     struct DefaultValue
     {
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+        template <class KT>
+        inline value_type operator()(KT&& key)  const
+        {
+            return { std::forward<KT>(key), T() };
+        }
+#else
         inline value_type operator()(const Key& key)  const
         {
             return std::make_pair(key, T());
         }
+#endif
     };
 
     // The actual data
@@ -3783,10 +3799,18 @@ public:
     const_iterator find(const key_type& key) const     { return rep.find(key); }
     bool contains(const key_type& key) const           { return rep.find(key) != rep.end(); }
 
+#if !defined(SPP_NO_CXX11_VARIADIC_TEMPLATES)
+    template <class KT>
+    mapped_type& operator[](KT&& key)
+    {
+        return rep.template find_or_insert<DefaultValue>(std::forward<KT>(key)).second;
+    }
+#else
     mapped_type& operator[](const key_type& key)
     {
         return rep.template find_or_insert<DefaultValue>(key).second;
     }
+#endif
 
     size_type count(const key_type& key) const         { return rep.count(key); }
 

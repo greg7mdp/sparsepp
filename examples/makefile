@@ -2,7 +2,7 @@ CXXFLAGS     = -O2 -std=c++11 -I..
 CXXFLAGS    += -Wall -pedantic -Wextra
 SPP_DEPS_1   =  spp.h spp_utils.h spp_dlalloc.h spp_traits.h spp_config.h
 SPP_DEPS     = $(addprefix ../sparsepp/,$(SPP_DEPS_1))
-TARGETS      = movable emplace piecewise hash_std serialize_file serialize_stream serialize_large
+TARGETS      = insert_rvalue movable emplace piecewise hash_std serialize_file serialize_stream serialize_large
 
 ifeq ($(OS),Windows_NT)
     LDFLAGS  = -lpsapi
