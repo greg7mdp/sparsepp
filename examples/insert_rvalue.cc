@@ -22,14 +22,29 @@ int main()
 #endif
 
     AssociativeContainer c;
-    char buf[10];
+    char buf[10], buf2[10];
 
-    for (int i=0; i<100; ++i)
+    for (int i=0; i<10; ++i)
     {
-        sprintf(buf, "%d", i);
+        sprintf(buf, "%d", i); 
+        sprintf(buf2, "val%d", i);
         auto& value = c[make_unique<std::string>(buf)];
-        sprintf(buf, "val%d", i);
-        value = make_unique<std::string>(buf);
+        value = make_unique<std::string>(buf2);
+    }
+
+    for (int i=10; i<20; ++i)
+    {
+        sprintf(buf, "%d", i); 
+        sprintf(buf2, "val%d", i);
+        auto&& p = std::make_pair(make_unique<std::string>(buf), make_unique<std::string>(buf2));
+        c.insert(std::move(p));
+    }
+
+    for (int i=20; i<30; ++i)
+    {
+        sprintf(buf, "%d", i); 
+        sprintf(buf2, "val%d", i);
+        c.emplace(std::make_pair(make_unique<std::string>(buf), make_unique<std::string>(buf2)));
     }
 
     for (auto& p : c)
