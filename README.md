@@ -1,11 +1,13 @@
 [![Build Status](https://travis-ci.org/greg7mdp/sparsepp.svg?branch=master)](https://travis-ci.org/greg7mdp/sparsepp)
 
+<aside class="warning"> WARNING: Please upgrade to the latest version if you are using a version of sparsepp older than Sept 16, 2018, when serious issue #62 was fixed.</aside>
+
 # Sparsepp: A fast, memory efficient hash map for C++
 
 Sparsepp is derived from Google's excellent [sparsehash](https://github.com/sparsehash/sparsehash) implementation. It aims to achieve the following objectives:
 
 - A drop-in alternative for unordered_map and unordered_set.
-- **Extremely low memory usage** (typically about one byte overhead per entry), and most important very small memory overhead when resizing.
+- **Extremely low memory usage** (typically about one byte overhead per entry), and most importantly **very small memory overhead when resizing**.
 - **Very efficient**, typically faster than your compiler's unordered map/set or Boost's.
 - **C++11 support** (if supported by compiler).
 - ~~Single header~~ not anymore
