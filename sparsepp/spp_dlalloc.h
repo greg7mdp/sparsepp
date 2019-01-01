@@ -137,6 +137,11 @@ namespace spp
             return res;
         }
 
+        pointer reallocate(pointer p, size_type /* old_size */, size_t new_size)
+        {
+            return reallocate(p, new_size);
+        }
+        
         size_type max_size() const
         {
             return static_cast<size_type>(-1) / sizeof(value_type);

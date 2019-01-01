@@ -57,7 +57,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] < j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
                     _check_buf(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -76,7 +76,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] > j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
                     _check_buf1(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -95,7 +95,7 @@ public:
                 // if ( _sizes[i] < j)                    // windows allocator friendly!
                 if ((rand() % 4) != 3 && _sizes[i] < j)   // really messes up windows allocator
                 {
-                    _allocated[i] = _allocator.reallocate(_allocated[i], j);
+                    _allocated[i] = _allocator.reallocate(_allocated[i], _sizes[i], j);
                     _check_buf(_allocated[i], _sizes[i]);
                     _set_buf(_allocated[i], j);
                     _sizes[i] = j;
@@ -125,7 +125,9 @@ public:
         printf("allocated %zd entities of size %zd\n", total_units, sizeof(T));
         printf("done in %3.2f seconds, mem_usage %4.1f/%4.1f/%4.1f MB\n", 
                timer.get_total() / 1000, _to_mb(_start_mem_usage),  _to_mb(mem_usage),  _to_mb(mem_usage_end));
-        printf("expected mem usage: %4.1f\n", _to_mb(expected_mem_usage));
+        printf("mem usage: %4.1f, expected mem usage: %4.1f\n", 
+               _to_mb(alloc_mem_usage), 
+               _to_mb(expected_mem_usage));
         if (expected_mem_usage <= alloc_mem_usage)
             printf("overhead: %4.1f%%\n", 
                    (float)((double)(alloc_mem_usage - expected_mem_usage) / expected_mem_usage) * 100);
