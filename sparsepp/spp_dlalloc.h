@@ -177,7 +177,7 @@ namespace spp
 
         void clear()
         {
-            assert(!_space && _space_to_clear);
+            assert(!_space && !!_space_to_clear);
             _space_to_clear.reset();
             _space = new MSpace;
         }
