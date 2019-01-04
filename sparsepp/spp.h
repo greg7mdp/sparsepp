@@ -778,11 +778,15 @@ public:
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 template <class T, class row_it, class col_it, class iter_type>
-class Two_d_iterator : public std::iterator<iter_type, T>
+class Two_d_iterator
 {
 public:
     typedef Two_d_iterator iterator;
+    typedef iter_type      iterator_category;
     typedef T              value_type;
+    typedef std::ptrdiff_t difference_type;
+    typedef T*             pointer;
+    typedef T&             reference;
 
     explicit Two_d_iterator(row_it curr) : row_current(curr), col_current(0)
     {
