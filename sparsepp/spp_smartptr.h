@@ -37,12 +37,7 @@ public:
     spp_sptr(const spp_sptr &o) : _p(o._p)  { if (_p) _p->increment(); }
 #ifndef SPP_NO_CXX11_RVALUE_REFERENCES 
     spp_sptr(spp_sptr &&o) : _p(o._p)       { o._p = (T *)0; }
-    spp_sptr& operator=(spp_sptr &&o)
-    {
-        if (_p) _p->decrement(); 
-        _p = o._p;
-        o._p = (T *)0; 
-    }
+    spp_sptr& operator=(spp_sptr &&o)       { this->swap(o); return *this; }
 #endif    
     ~spp_sptr()                             { if (_p) _p->decrement(); }
     spp_sptr& operator=(const spp_sptr &o)  { reset(o._p); return *this; }
