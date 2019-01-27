@@ -2917,23 +2917,21 @@ public:
 
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
 
-    sparse_hashtable(sparse_hashtable&& o) :
-        settings(std::move(o.settings)),
-        key_info(std::move(o.key_info)),
-        num_deleted(o.num_deleted),
-        table(std::move(o.table))
+    sparse_hashtable(sparse_hashtable&& o, const allocator_type& alloc = allocator_type()) :
+        settings(o.settings),
+        key_info(o.key_info),
+        num_deleted(0),
+        table(HT_DEFAULT_STARTING_BUCKETS, alloc)
     {
+        settings.reset_thresholds(bucket_count());
+        this->swap(o);
     }
 
-    sparse_hashtable(sparse_hashtable&& o, const allocator_type& alloc) :
-        settings(std::move(o.settings)),
-        key_info(std::move(o.key_info)),
-        num_deleted(o.num_deleted),
-        table(std::move(o.table), alloc)
+    sparse_hashtable& operator=(sparse_hashtable&& o)
     {
+        this->swap(o);
+        return *this;
     }
-
-    sparse_hashtable& operator=(sparse_hashtable&& o) = default;
 #endif
 
     sparse_hashtable(MoveDontCopyT mover,
