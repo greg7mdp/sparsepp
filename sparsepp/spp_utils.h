@@ -84,7 +84,7 @@
        #include <functional>
        #define SPP_HASH_CLASS  std::hash
     #else
-       #include <tr1/unordered_map>
+       #include <tr1/functional>
        #define SPP_HASH_CLASS std::tr1::hash
     #endif
 
