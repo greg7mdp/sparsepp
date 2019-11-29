@@ -13,7 +13,7 @@ class SparseppConan(ConanFile):
     license = "https://github.com/greg7mdp/sparsepp/blob/master/LICENSE"
     
     # Packages the license for the conanfile.py
-    exports = ["LICENSE.md"]
+    exports = ["LICENSE"]
     
     # Custom attributes for Bincrafters recipe conventions
     source_subfolder = "source_subfolder"
