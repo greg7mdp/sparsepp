@@ -2084,10 +2084,11 @@ public:
             // resize group array
             // ------------------
             group_type *first = 0, *last = 0;
-            if (sz && old_sz)
+            if (sz)
             {
                 _alloc_group_array(sz, first, last);
-                memcpy(static_cast<void *>(first), _first_group, sizeof(*first) * (std::min)(sz, old_sz));
+                if (old_sz)
+                    memcpy(static_cast<void *>(first), _first_group, sizeof(*first) * (std::min)(sz, old_sz));
             }
 
             if (sz < old_sz)
