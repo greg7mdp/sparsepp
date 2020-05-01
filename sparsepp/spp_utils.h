@@ -80,7 +80,7 @@
         #define SPP_NO_CXX11_NOEXCEPT
     #endif
 #elif defined __clang__
-    #if __has_feature(cxx_noexcept)  // what to use here?
+    #if __has_feature(cxx_noexcept) || defined(SPP_CXX11) // define SPP_CXX11 if your compiler has <functional>
        #include <functional>
        #define SPP_HASH_CLASS  std::hash
     #else
