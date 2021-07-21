@@ -3722,6 +3722,7 @@ public:
     sparse_hash_map& operator=(sparse_hash_map &&o)
     {
         rep = std::move(o.rep);
+        return *this;
     }
 #endif
 
