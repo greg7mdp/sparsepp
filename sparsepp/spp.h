@@ -901,6 +901,10 @@ class Two_d_destructive_iterator : public Two_d_iterator<T, row_it, col_it, iter
 public:
     typedef Two_d_destructive_iterator iterator;
 
+#   ifdef SPP_GCC_CXX11
+    Two_d_destructive_iterator(const Two_d_destructive_iterator &) = default;
+#   endif
+
     Two_d_destructive_iterator(Alloc &alloc, row_it curr) :
         _alloc(alloc)
     {
