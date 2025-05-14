@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools
+from conan import ConanFile, tools
+from conan.tools.files import get,copy
 import os
 
 class SparseppConan(ConanFile):
@@ -18,9 +19,11 @@ class SparseppConan(ConanFile):
     # Custom attributes for Bincrafters recipe conventions
     source_subfolder = "source_subfolder"
     
+    package_type = "header-library"
+    
     def source(self):
         source_url = "https://github.com/greg7mdp/sparsepp"
-        tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
+        get(self, "{0}/archive/{1}.tar.gz".format(source_url, self.version))
         extracted_dir = self.name + "-" + self.version
 
         #Rename to "source_folder" is a convention to simplify later steps
@@ -29,8 +32,8 @@ class SparseppConan(ConanFile):
 
     def package(self):
         include_folder = os.path.join(self.source_subfolder, "sparsepp")
-        self.copy(pattern="LICENSE")
-        self.copy(pattern="*", dst="include/sparsepp", src=include_folder)
+        copy(self, "*", include_folder, self.package_folder)
 
     def package_id(self):
-        self.info.header_only()
+        self.info.clear()
+    
