@@ -1340,7 +1340,7 @@ private:
     void _init_val(mutable_value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        ::new (p) value_type(std::move((mutable_reference)val));
+        ::new (p) value_type(std::move(*((mutable_pointer)(&val))));
 #else
         ::new (p) value_type((mutable_reference)val);
 #endif
@@ -1356,7 +1356,7 @@ private:
     void _set_val(value_type *p, reference val)
     {
 #if !defined(SPP_NO_CXX11_RVALUE_REFERENCES)
-        *(mutable_pointer)p = std::move((mutable_reference)val);
+       *(mutable_pointer)p = std::move(*((mutable_pointer)(&val)));
 #else
         using std::swap;
         swap(*(mutable_pointer)p, *(mutable_pointer)&val);

@@ -2738,7 +2738,11 @@ struct Memmove
 public:
     Memmove(): i(0) {}
     explicit Memmove(int ival): i(ival) {}
-    Memmove(const Memmove& that) { this->i = that.i; num_copies++; }
+    Memmove(const Memmove& that) {
+       this->i = that.i;
+       num_copies++;
+    }
+    Memmove& operator=(const Memmove&) = default;
     int i;
     static int num_copies;
 };
@@ -2750,6 +2754,7 @@ public:
     NoMemmove(): i(0) {}
     explicit NoMemmove(int ival): i(ival) {}
     NoMemmove(const NoMemmove& that) { this->i = that.i; num_copies++; }
+    NoMemmove& operator=(const NoMemmove&) = default;
     int i;
     static int num_copies;
 };
