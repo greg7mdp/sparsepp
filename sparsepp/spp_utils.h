@@ -422,7 +422,7 @@ public:
 
     pointer reallocate(pointer p, size_t new_size) 
     {
-        pointer res = static_cast<pointer>(realloc(p, new_size * sizeof(T)));
+        pointer res = static_cast<pointer>(realloc((void *)p, new_size * sizeof(T)));
         if (!res)
             throw std::bad_alloc();
         return res;
