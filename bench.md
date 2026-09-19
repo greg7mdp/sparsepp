@@ -115,9 +115,9 @@ Looks good, but what is the cost of using [Sparsepp](https://github.com/greg7mdp
 
   ![delete](https://github.com/greg7mdp2/img/blob/master/sparsepp/spp_mem.PNG?raw=true)
 
-Not bad! While [Sparsepp](https://github.com/greg7mdp/sparsepp) memory usage is a little bit higher than the original sparse_hash_map, it is still memory friendly, and there are no memory spikes when the map resizes. We can see that when moving from 60M entries to 70M entries, both Google's dense and [Sparsepp](https://github.com/greg7mdp/sparsepp) hash_maps needed a resize to accomodate the 70M elements. The resize proved fatal for the dense_hash_map, who could not allocate the 6GB needed for the resize + copy, while the [Sparsepp](https://github.com/greg7mdp/sparsepp) sparse_hash_map had no problem.
+Not bad! While [Sparsepp](https://github.com/greg7mdp/sparsepp) memory usage is a little bit higher than the original sparse_hash_map, it is still memory friendly, and there are no memory spikes when the map resizes. We can see that when moving from 60M entries to 70M entries, both Google's dense and [Sparsepp](https://github.com/greg7mdp/sparsepp) hash_maps needed a resize to accommodate the 70M elements. The resize proved fatal for the dense_hash_map, which could not allocate the 6GB needed for the resize + copy, while the [Sparsepp](https://github.com/greg7mdp/sparsepp) sparse_hash_map had no problem.
 
-In order to validate that the sparse hash tables can indeed grow to accomodate many more entries than regular hash tables, we decided to run a test that would gounsert items until all tables run out of memory, the result of which is presented in the two graphs below:
+In order to validate that the sparse hash tables can indeed grow to accommodate many more entries than regular hash tables, we decided to run a test that would insert items until all tables run out of memory; the result is presented in the two graphs below:
 
   ![SPP_ALLOC_SZ_0](https://github.com/greg7mdp2/img/blob/master/sparsepp/insert_large_0.PNG?raw=true)
 
